@@ -14,6 +14,10 @@ public class Filter implements Handler {
     private final Function<HttpRequest, Boolean> condition;
     private final Handler onFiltered;
 
+    public static Filter of(Handler onFiltered) {
+        return Filter.of(request -> true, onFiltered);
+    }
+
     @Override
     public boolean isRunnable(HttpRequest request) {
         return onFiltered.isRunnable(request);
