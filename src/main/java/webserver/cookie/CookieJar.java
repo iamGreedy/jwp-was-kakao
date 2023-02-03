@@ -16,6 +16,9 @@ public class CookieJar {
         for (var rawData : rawDatas) {
             for (String each : rawData.split(";")) {
                 var splited = each.trim().split("=");
+                if (splited[1].isEmpty()) {
+                    continue;
+                }
                 jar.add(splited[0], splited[1]);
             }
         }

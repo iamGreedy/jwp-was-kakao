@@ -104,6 +104,11 @@ public class HttpResponse {
             return this;
         }
 
+        public Builder deleteCookie(String name) {
+            header("Set-Cookie", String.format("%s=; Path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT", name));
+            return this;
+        }
+
         public Builder body(String body) {
             result.body = body.getBytes();
             result.header.put("Content-Length", List.of(Integer.toString(body.length())));
