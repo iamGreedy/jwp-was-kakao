@@ -34,6 +34,10 @@ public class HttpResponse {
         return this;
     }
 
+    public HttpResponseException toException() {
+        return HttpResponseException.from(this);
+    }
+
     public void writeStream(DataOutputStream outputStream) {
         try {
             outputStream.writeBytes(String.format("%s %d %s \r\n", version, status.value(), status.getReasonPhrase()));

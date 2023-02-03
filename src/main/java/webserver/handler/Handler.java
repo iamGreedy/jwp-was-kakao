@@ -5,7 +5,9 @@ import webserver.http.HttpResponse;
 
 public interface Handler {
 
-    boolean isRunnable(HttpRequest request);
+    default boolean isRunnable(HttpRequest request) {
+        return true;
+    }
 
     HttpResponse run(HttpRequest request);
 }
