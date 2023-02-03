@@ -15,7 +15,7 @@ public class Form {
         for (var eachField : raw.split("&")) {
             var keyval = eachField.split("=");
             var key = URLDecoder.decode(keyval[0], StandardCharsets.UTF_8);
-            var val = URLDecoder.decode(keyval[0], StandardCharsets.UTF_8);
+            var val = URLDecoder.decode(keyval[1], StandardCharsets.UTF_8);
             if (!data.containsKey(key)) {
                 data.put(key, new ArrayList<>());
             }
