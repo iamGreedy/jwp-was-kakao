@@ -34,7 +34,7 @@ public class Controller implements Handler {
         return handlers.stream()
                        .filter(each -> each.isRunnable(request))
                        .map(handler -> handler.run(request))
-                       .takeWhile(Objects::nonNull)
+                       .dropWhile(Objects::isNull)
                        .findFirst().orElse(null);
     }
 }
