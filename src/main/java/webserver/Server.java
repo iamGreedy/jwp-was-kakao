@@ -20,10 +20,16 @@ import java.util.concurrent.Executors;
 public class Server {
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
     private final Controller defaultController;
-
+    private final Executor executor;
 
     public Server() {
-        defaultController = Controller.of();
+        this.defaultController = Controller.of();
+        this.executor = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+    }
+
+    public Server(Executor executor) {
+        this.defaultController = Controller.of();
+        this.executor = executor;
     }
 
     public Server addHandler(Handler handler) {
@@ -69,14 +75,13 @@ public class Server {
     }
 
     public void listen(int port) throws Exception {
-        Executor executors = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
         // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
         try (var listenSocket = new ServerSocket(port)) {
             logger.info("Web Application Server started {} port.", port);
             Socket connection;
             // 클라이언트가 연결될때까지 대기한다.
             while ((connection = listenSocket.accept()) != null) {
-                executors.execute(prepare(connection));
+                executor.execute(prepare(connection));
             }
         }
     }

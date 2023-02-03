@@ -19,7 +19,6 @@ import webserver.handler.TemplateEngine;
 import webserver.http.HttpResponse;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.regex.Pattern;
 
 public class WebServer {
@@ -27,14 +26,9 @@ public class WebServer {
     private static final int DEFAULT_PORT = 8080;
 
     public static void main(String args[]) throws Exception {
-
-        int port = 0;
-        if (args == null || args.length == 0) {
-            port = DEFAULT_PORT;
-        } else {
-            port = Integer.parseInt(args[0]);
-        }
+        int port = (args == null || args.length == 0) ? DEFAULT_PORT : Integer.parseInt(args[0]);
         new Server()
+                // 존재하지 않는 세션을 보유하는 경우 자동으로 쿠키를 삭제하고 로그인을 요구하게 만든다.
                 .addHandler(Filter.of(request -> {
                     var sessionId = request.jar().get("JSESSIONID");
                     if (sessionId.isPresent() && SessionManager.find(sessionId.get()).isEmpty()) {
@@ -44,19 +38,8 @@ public class WebServer {
                                            .deleteCookie("JSESSIONID")
                                            .build();
                     }
-                    System.out.println("W");
                     return null;
                 }))
-                .addHandler(
-                        RestfulAPI.builder()
-                                  .locationPattern(Pattern.compile("^/ping"))
-                                  .handler((request) -> HttpResponse.builder()
-                                                                    .status(HttpStatus.OK)
-                                                                    .header("Content-Type", "text/plain")
-                                                                    .body("pong")
-                                                                    .build())
-                                  .build()
-                )
                 .addHandler(
                         RestfulAPI.builder()
                                   .method(HttpMethod.POST)
@@ -142,7 +125,6 @@ public class WebServer {
                                           loader.setSuffix(".html");
                                           Handlebars handlebars = new Handlebars(loader);
                                           Template template = handlebars.compile("user/list");
-                                          System.out.println(Arrays.toString(DataBase.findAll().toArray()));
                                           String profilePage = template.apply(DataBase.findAll().toArray());
                                           logger.debug("ProfilePage : {}", profilePage);
                                           return HttpResponse.builder()
