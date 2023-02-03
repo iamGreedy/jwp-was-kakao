@@ -13,13 +13,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import webserver.cookie.Cookie;
 import webserver.handler.FileSystem;
+import webserver.handler.Filter;
 import webserver.handler.RestfulAPI;
 import webserver.handler.TemplateEngine;
 import webserver.http.HttpResponse;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -28,14 +27,26 @@ public class WebServer {
     private static final int DEFAULT_PORT = 8080;
 
     public static void main(String args[]) throws Exception {
+
         int port = 0;
         if (args == null || args.length == 0) {
             port = DEFAULT_PORT;
         } else {
             port = Integer.parseInt(args[0]);
         }
-        var server = new Server();
-        server
+        new Server()
+                .addHandler(Filter.of(request -> {
+                    var sessionId = request.jar().get("JSESSIONID");
+                    if (sessionId.isPresent() && SessionManager.find(sessionId.get()).isEmpty()) {
+                        return HttpResponse.builder()
+                                           .status(HttpStatus.TEMPORARY_REDIRECT)
+                                           .header("Location", "/user/login.html")
+                                           .deleteCookie("JSESSIONID")
+                                           .build();
+                    }
+                    System.out.println("W");
+                    return null;
+                }))
                 .addHandler(
                         RestfulAPI.builder()
                                   .locationPattern(Pattern.compile("^/ping"))
@@ -147,36 +158,40 @@ public class WebServer {
                                   })
                                   .build()
                 )
+                .addHandler(Filter.of(request -> {
+                    var session = request.jar()
+                                         .get("JSESSIONID")
+                                         .flatMap(SessionManager::find);
+                    if (request.getPath().startsWith("/user/form.html") && session.isPresent()) {
+                        return HttpResponse.builder()
+                                           .status(HttpStatus.TEMPORARY_REDIRECT)
+                                           .header("Location", "/index.html")
+                                           .build();
+                    }
+                    if (request.getPath().startsWith("/user/login.html") && session.isPresent()) {
+                        return HttpResponse.builder()
+                                           .status(HttpStatus.TEMPORARY_REDIRECT)
+                                           .header("Location", "/index.html")
+                                           .build();
+                    }
+                    if (request.getPath().startsWith("/user/list.html") && session.isEmpty()) {
+                        return HttpResponse.builder()
+                                           .status(HttpStatus.TEMPORARY_REDIRECT)
+                                           .header("Location", "/user/login.html")
+                                           .build();
+                    }
+                    return null;
+                }))
                 .addHandler(TemplateEngine.of(
                         "/templates",
                         request -> {
                             if (request.getPath().startsWith("/user/list.html")) {
-                                var session = request.jar()
-                                                     .get("JSESSIONID")
-                                                     .flatMap(SessionManager::find);
-                                if (session.isEmpty()) {
-                                    throw HttpResponse.builder()
-                                                      .status(HttpStatus.PERMANENT_REDIRECT)
-                                                      .header("Location", "/user/login.html")
-                                                      .build()
-                                                      .toException();
-                                }
                                 return DataBase.findAll().toArray();
                             }
                             return null;
                         }
                 ))
                 .addHandler(FileSystem.of("/static"))
-        ;
-        // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
-        try (var listenSocket = new ServerSocket(port)) {
-            logger.info("Web Application Server started {} port.", port);
-            Socket connection;
-            // 클라이언트가 연결될때까지 대기한다.
-            while ((connection = listenSocket.accept()) != null) {
-                Thread thread = new Thread(server.prepare(connection));
-                thread.start();
-            }
-        }
+                .listen(port);
     }
 }
