@@ -1,6 +1,9 @@
 package db;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 public class SessionManager {
     private static Map<String, Session> sessions = new HashMap<>();
@@ -12,8 +15,6 @@ public class SessionManager {
     }
 
     public static Optional<Session> find(String sessionId) {
-        System.out.println(sessionId);
-        System.out.println(Arrays.toString(sessions.keySet().toArray()));
         return Optional.ofNullable(sessions.getOrDefault(sessionId, null));
     }
 }

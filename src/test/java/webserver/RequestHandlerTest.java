@@ -87,13 +87,15 @@ class RequestHandlerTest {
                 "HTTP/1.1 302 Found ",
                 "Location: /index.html "
         );
-        var user = DataBase.findUserById("cu");
-        assertThat(user).isNotNull();
-        assertAll(
-                () -> assertThat(user.getUserId()).isEqualTo("cu"),
-                () -> assertThat(user.getPassword()).isEqualTo("password"),
-                () -> assertThat(user.getName()).isEqualTo("이동규"),
-                () -> assertThat(user.getEmail()).isEqualTo("brainbackdoor@gmail.com")
-        );
+        assertThat(DataBase.findUserById("cu"))
+                .isPresent()
+                .get()
+                .satisfies(user -> assertAll(
+                        () -> assertThat(user.getUserId()).isEqualTo("cu"),
+                        () -> assertThat(user.getPassword()).isEqualTo("password"),
+                        () -> assertThat(user.getName()).isEqualTo("이동규"),
+                        () -> assertThat(user.getEmail()).isEqualTo("brainbackdoor@gmail.com")
+                ));
+        ;
     }
 }

@@ -13,14 +13,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import webserver.cookie.Cookie;
 import webserver.handler.FileSystem;
+import webserver.handler.Filter;
 import webserver.handler.RestfulAPI;
 import webserver.handler.TemplateEngine;
 import webserver.http.HttpResponse;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Arrays;
 import java.util.regex.Pattern;
 
 public class WebServer {
@@ -35,21 +33,23 @@ public class WebServer {
             port = Integer.parseInt(args[0]);
         }
         var server = server();
-        // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
-        try (var listenSocket = new ServerSocket(port)) {
-            logger.info("Web Application Server started {} port.", port);
-            Socket connection;
-            // 클라이언트가 연결될때까지 대기한다.
-            while ((connection = listenSocket.accept()) != null) {
-                Thread thread = new Thread(server.prepare(connection));
-                thread.start();
-            }
-        }
+        server.listen(port);
     }
 
     public static Server server() {
-        var server = new Server();
-        server
+
+        return new Server()
+                .addHandler(Filter.of(request -> {
+                    var sessionId = request.jar().get("JSESSIONID");
+                    if (sessionId.isPresent() && SessionManager.find(sessionId.get()).isEmpty()) {
+                        return HttpResponse.builder()
+                                           .status(HttpStatus.TEMPORARY_REDIRECT)
+                                           .header("Location", "/user/login.html")
+                                           .deleteCookie("JSESSIONID")
+                                           .build();
+                    }
+                    return null;
+                }))
                 .addHandler(
                         RestfulAPI.builder()
                                   .locationPattern(Pattern.compile("^/ping"))
@@ -145,7 +145,6 @@ public class WebServer {
                                           loader.setSuffix(".html");
                                           Handlebars handlebars = new Handlebars(loader);
                                           Template template = handlebars.compile("user/list");
-                                          System.out.println(Arrays.toString(DataBase.findAll().toArray()));
                                           String profilePage = template.apply(DataBase.findAll().toArray());
                                           logger.debug("ProfilePage : {}", profilePage);
                                           return HttpResponse.builder()
@@ -161,6 +160,30 @@ public class WebServer {
                                   })
                                   .build()
                 )
+                .addHandler(Filter.of(request -> {
+                    var session = request.jar()
+                                         .get("JSESSIONID")
+                                         .flatMap(SessionManager::find);
+                    if (request.getPath().startsWith("/user/form.html") && session.isPresent()) {
+                        return HttpResponse.builder()
+                                           .status(HttpStatus.TEMPORARY_REDIRECT)
+                                           .header("Location", "/index.html")
+                                           .build();
+                    }
+                    if (request.getPath().startsWith("/user/login.html") && session.isPresent()) {
+                        return HttpResponse.builder()
+                                           .status(HttpStatus.TEMPORARY_REDIRECT)
+                                           .header("Location", "/index.html")
+                                           .build();
+                    }
+                    if (request.getPath().startsWith("/user/list.html") && session.isEmpty()) {
+                        return HttpResponse.builder()
+                                           .status(HttpStatus.TEMPORARY_REDIRECT)
+                                           .header("Location", "/user/login.html")
+                                           .build();
+                    }
+                    return null;
+                }))
                 .addHandler(TemplateEngine.of(
                         "/templates",
                         request -> {
@@ -180,8 +203,6 @@ public class WebServer {
                             return null;
                         }
                 ))
-                .addHandler(FileSystem.of("/static"))
-        ;
-        return server;
+                .addHandler(FileSystem.of("/static"));
     }
 }
