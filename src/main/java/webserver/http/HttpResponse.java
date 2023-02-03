@@ -95,6 +95,11 @@ public class HttpResponse {
             return this;
         }
 
+        public Builder cookie(Cookie cookie) {
+            header("Set-Cookie", cookie.format());
+            return this;
+        }
+
         public Builder body(String body) {
             result.body = body.getBytes();
             result.header.put("Content-Length", List.of(Integer.toString(body.length())));
