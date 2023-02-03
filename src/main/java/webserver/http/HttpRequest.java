@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
+import webserver.cookie.CookieJar;
 import webserver.form.Form;
 import webserver.mime.Mime;
 
@@ -31,6 +32,8 @@ public class HttpRequest {
     @Getter(AccessLevel.NONE)
     private Map<String, List<String>> header;
     private String body;
+    @Getter(AccessLevel.NONE)
+    private CookieJar cookieJar;
 
     public static HttpRequest from(InputStream input) {
         try {
@@ -99,7 +102,8 @@ public class HttpRequest {
                     query,
                     version,
                     header,
-                    body
+                    body,
+                    CookieJar.parse(header.get("Cookie").toArray(String[]::new))
             );
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -141,7 +145,8 @@ public class HttpRequest {
                 this.query,
                 this.version,
                 this.header,
-                this.body
+                this.body,
+                this.cookieJar
         );
     }
 }

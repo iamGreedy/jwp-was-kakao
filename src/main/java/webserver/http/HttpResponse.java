@@ -1,6 +1,7 @@
 package webserver.http;
 
 import org.springframework.http.HttpStatus;
+import webserver.cookie.Cookie;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -25,6 +26,11 @@ public class HttpResponse {
         for (var value : values) {
             header.get(key).add(value);
         }
+        return this;
+    }
+
+    public HttpResponse addCookie(Cookie cookie) {
+        addHeader("Set-Cookie", cookie.format());
         return this;
     }
 
