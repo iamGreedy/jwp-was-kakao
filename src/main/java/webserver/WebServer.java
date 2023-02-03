@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import webserver.cookie.Cookie;
 import webserver.handler.FileSystem;
 import webserver.handler.RestfulAPI;
+import webserver.handler.TemplateEngine;
 import webserver.http.HttpResponse;
 
 import java.io.IOException;
@@ -124,15 +125,6 @@ public class WebServer {
                         RestfulAPI.builder()
                                   .locationPattern(Pattern.compile("^/user/list"))
                                   .handler((request) -> {
-                                      var session = request.jar()
-                                                           .get("JSESSIONID")
-                                                           .flatMap(SessionManager::find);
-                                      if (session.isEmpty()) {
-                                          return HttpResponse.builder()
-                                                             .status(HttpStatus.PERMANENT_REDIRECT)
-                                                             .header("Location", "/user/login.html")
-                                                             .build();
-                                      }
                                       try {
                                           TemplateLoader loader = new ClassPathTemplateLoader();
                                           loader.setPrefix("/templates");
@@ -155,7 +147,25 @@ public class WebServer {
                                   })
                                   .build()
                 )
-                .addHandler(FileSystem.of("/templates"))
+                .addHandler(TemplateEngine.of(
+                        "/templates",
+                        request -> {
+                            if (request.getPath().startsWith("/user/list.html")) {
+                                var session = request.jar()
+                                                     .get("JSESSIONID")
+                                                     .flatMap(SessionManager::find);
+                                if (session.isEmpty()) {
+                                    throw HttpResponse.builder()
+                                                      .status(HttpStatus.PERMANENT_REDIRECT)
+                                                      .header("Location", "/user/login.html")
+                                                      .build()
+                                                      .toException();
+                                }
+                                return DataBase.findAll().toArray();
+                            }
+                            return null;
+                        }
+                ))
                 .addHandler(FileSystem.of("/static"))
         ;
         // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
