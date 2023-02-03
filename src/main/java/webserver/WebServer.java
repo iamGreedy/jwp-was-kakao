@@ -67,7 +67,8 @@ public class WebServer {
                                       }
                                       DataBase.addUser(new User(userId.get(), password.get(), name.get(), email.get()));
                                       return HttpResponse.builder()
-                                                         .status(HttpStatus.NO_CONTENT)
+                                                         .status(HttpStatus.PERMANENT_REDIRECT)
+                                                         .header("Location", "/user/login.html")
                                                          .build();
                                   })
                                   .build()
@@ -77,6 +78,16 @@ public class WebServer {
                                   .method(HttpMethod.POST)
                                   .locationPattern(Pattern.compile("^/user/login"))
                                   .handler((request) -> {
+                                      var previousSession = request.jar()
+                                                                   .get("JSESSIONID")
+                                                                   .flatMap(SessionManager::find);
+                                      if (previousSession.isPresent()) {
+                                          // 이미 로그인된 경우 리다이렉션
+                                          return HttpResponse.builder()
+                                                             .status(HttpStatus.PERMANENT_REDIRECT)
+                                                             .header("Location", "/index.html")
+                                                             .build();
+                                      }
                                       var form = request.toForm();
                                       if (form.isEmpty()) {
                                           return HttpResponse.builder()
