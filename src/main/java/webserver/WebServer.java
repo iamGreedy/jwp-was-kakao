@@ -1,17 +1,25 @@
 package webserver;
 
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Template;
+import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
+import com.github.jknack.handlebars.io.TemplateLoader;
 import db.DataBase;
+import db.SessionManager;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import webserver.cookie.Cookie;
 import webserver.handler.FileSystem;
 import webserver.handler.RestfulAPI;
 import webserver.http.HttpResponse;
 
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 public class WebServer {
@@ -97,10 +105,57 @@ public class WebServer {
                                                              .status(HttpStatus.BAD_REQUEST)
                                                              .build();
                                       }
-                                      var user = DataBase.findUserById(userId.get());
-                                      return HttpResponse.builder()
-                                                         .status(HttpStatus.NO_CONTENT)
-                                                         .build();
+                                      return DataBase.findUserById(userId.get())
+                                                     .map((user) -> {
+                                                         var session = SessionManager.create();
+                                                         session.setAttribute("userId", userId.get());
+                                                         return HttpResponse.builder()
+                                                                            .status(HttpStatus.PERMANENT_REDIRECT)
+                                                                            .header("Location", "/index.html")
+                                                                            .cookie(Cookie.of("JSESSIONID", session.getId(), "/"))
+                                                                            .build();
+                                                     })
+                                                     .orElseGet(() -> {
+                                                         return HttpResponse.builder()
+                                                                            .status(HttpStatus.PERMANENT_REDIRECT)
+                                                                            .header("Location", "/user/login_failed.html")
+                                                                            .build();
+                                                     });
+                                  })
+                                  .build()
+                )
+                .addHandler(
+                        RestfulAPI.builder()
+                                  .locationPattern(Pattern.compile("^/user/list"))
+                                  .handler((request) -> {
+                                      var session = request.jar()
+                                                           .get("JSESSIONID")
+                                                           .flatMap(SessionManager::find);
+                                      if (session.isEmpty()) {
+                                          return HttpResponse.builder()
+                                                             .status(HttpStatus.PERMANENT_REDIRECT)
+                                                             .header("Location", "/user/login.html")
+                                                             .build();
+                                      }
+                                      try {
+                                          TemplateLoader loader = new ClassPathTemplateLoader();
+                                          loader.setPrefix("/templates");
+                                          loader.setSuffix(".html");
+                                          Handlebars handlebars = new Handlebars(loader);
+                                          Template template = handlebars.compile("user/list");
+                                          System.out.println(Arrays.toString(DataBase.findAll().toArray()));
+                                          String profilePage = template.apply(DataBase.findAll().toArray());
+                                          logger.debug("ProfilePage : {}", profilePage);
+                                          return HttpResponse.builder()
+                                                             .status(HttpStatus.OK)
+                                                             .body(profilePage)
+                                                             .build();
+                                      } catch (IOException e) {
+                                          return HttpResponse.builder()
+                                                             .status(HttpStatus.INTERNAL_SERVER_ERROR)
+
+                                                             .build();
+                                      }
                                   })
                                   .build()
                 )

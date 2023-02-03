@@ -103,7 +103,9 @@ public class HttpRequest {
                     version,
                     header,
                     body,
-                    CookieJar.parse(header.get("Cookie").toArray(String[]::new))
+                    Optional.ofNullable(header.get("Cookie"))
+                            .map(cookie -> CookieJar.parse(cookie.toArray(String[]::new)))
+                            .orElseGet(CookieJar::new)
             );
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -129,6 +131,10 @@ public class HttpRequest {
             return List.of();
         }
         return List.copyOf(header.get(key));
+    }
+
+    public CookieJar jar() {
+        return cookieJar;
     }
 
     public Optional<Form> toForm() {

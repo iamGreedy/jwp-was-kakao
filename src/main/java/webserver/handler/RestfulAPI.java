@@ -20,6 +20,7 @@ public class RestfulAPI implements Handler {
     }
 
     public HttpResponse run(HttpRequest request) {
-        return handler.apply(request);
+        return handler.apply(request)
+                      .addHeader("Cache-Control", "no-cache");
     }
 }
