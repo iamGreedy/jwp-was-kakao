@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URISyntaxException;
+import java.util.Map;
 
 public class RequestHandler implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
@@ -39,7 +40,7 @@ public class RequestHandler implements Runnable {
 
     private byte[] getResponseBody(HttpRequest request) throws IOException, URISyntaxException {
         if (request.getPath().endsWith(".html")) {
-            return FileIoUtils.loadFileFromClasspath("templates/" + request.getPath());
+            return FileIoUtils.loadFileFromClasspath("templates" + request.getPath());
         }
         if (request.getPath().equals("/")) {
             return "Hello world".getBytes();
@@ -47,27 +48,32 @@ public class RequestHandler implements Runnable {
         if (request.getPath().equals("/query")) {
             return ("hello " + request.getParameter("name")).getBytes();
         }
-        if (request.getPath().equals("/user/create")) {
-            String userId = request.getParameter("userId");
-            String password = request.getParameter("password");
-            String name = request.getParameter("name");
-            String email = request.getParameter("email");
+        if (request.getMethod().equals("POST") && request.getPath().equals("/user/create")) {
+            Map<String, String> applicationForm = request.toApplicationForm();
+            String userId = applicationForm.get("userId");
+            String password = applicationForm.get("password");
+            String name = applicationForm.get("name");
+            String email = applicationForm.get("email");
 
             User user = new User(userId, password, name, email);
             DataBase.addUser(user);
             logger.debug("{}", user);
-            
+
             return "".getBytes();
         }
+        if (request.getMethod().equals("POST") && request.getPath().equals("/post")) {
+            Map<String, String> applicationForm = request.toApplicationForm();
+            return String.format("hello %s", applicationForm.get("name")).getBytes();
+        }
 
-        return FileIoUtils.loadFileFromClasspath("static/" + request.getPath());
+        return FileIoUtils.loadFileFromClasspath("static" + request.getPath());
     }
 
     private String getContentType(String accept) throws IOException, URISyntaxException {
         if (accept == null || accept.isBlank()) {
             return "text/plain";
         }
-        return accept + ";charset=utf-8";
+        return accept.split(",")[0] + ";charset=utf-8";
     }
 
     private void writeResponse(OutputStream out, String contentType, byte[] body) {
