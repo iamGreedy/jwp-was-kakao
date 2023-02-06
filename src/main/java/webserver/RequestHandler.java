@@ -53,8 +53,10 @@ public class RequestHandler implements Runnable {
             String name = request.getParameter("name");
             String email = request.getParameter("email");
 
-            DataBase.addUser(new User(userId, password, name, email));
-
+            User user = new User(userId, password, name, email);
+            DataBase.addUser(user);
+            logger.debug("{}", user);
+            
             return "".getBytes();
         }
 
