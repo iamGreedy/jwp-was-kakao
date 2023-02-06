@@ -1,5 +1,7 @@
 package webserver;
 
+import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,7 +23,7 @@ public class HttpRequestLine {
             String queryString = uri.split("\\?")[1];
             Map<String, String> parameters = Arrays.stream(queryString.split("&"))
                                                    .map(v -> v.split("="))
-                                                   .collect(Collectors.toMap(v -> v[0], v -> v[1]));
+                                                   .collect(Collectors.toMap(v -> v[0], v -> URLDecoder.decode(v[1], Charset.defaultCharset())));
             return new HttpRequestLine(path, parameters);
         }
 
