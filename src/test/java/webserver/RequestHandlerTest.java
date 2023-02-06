@@ -15,6 +15,7 @@ class RequestHandlerTest {
         // given
         final var httpRequest = String.join("\r\n",
                 "GET / HTTP/1.1",
+                "Accept: text/html",
                 "Host: localhost:8080",
                 "",
                 "");
@@ -41,6 +42,7 @@ class RequestHandlerTest {
         // given
         final String httpRequest = String.join("\r\n",
                 "GET /index.html HTTP/1.1 ",
+                "Accept: text/html",
                 "Host: localhost:8080 ",
                 "Connection: keep-alive ",
                 "",
