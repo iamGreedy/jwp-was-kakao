@@ -125,15 +125,46 @@ class RequestHandlerTest {
     }
 
     @Test
-    void userCreate() throws IOException, URISyntaxException {
+    void requestBody() throws IOException, URISyntaxException {
         // given
         final String httpRequest = String.join("\r\n",
-                "GET /user/create?userId=cu&password=password&name=%EC%9D%B4%EB%8F%99%EA%B7%9C&email=brainbackdoor%40gmail.com HTTP/1.1",
+                "POST /post HTTP/1.1 ",
                 "Host: localhost:8080 ",
                 "Accept: text/plain",
                 "Connection: keep-alive ",
+                "Content-Length: 9",
+                "Content-Type: application/x-www-form-urlencoded",
                 "",
-                "");
+                "name=kane");
+        final var socket = new StubSocket(httpRequest);
+        final RequestHandler handler = new RequestHandler(socket);
+
+        // when
+        handler.run();
+
+        // then
+
+        var expected = "HTTP/1.1 200 OK \r\n" +
+                "Content-Type: text/plain;charset=utf-8 \r\n" +
+                "Content-Length: 10 \r\n" +
+                "\r\n" +
+                "hello kane";
+
+        assertThat(socket.output()).isEqualTo(expected);
+    }
+
+    @Test
+    void userCreate() throws IOException, URISyntaxException {
+        // given
+        final String httpRequest = String.join("\r\n",
+                "POST /user/create HTTP/1.1",
+                "Host: localhost:8080 ",
+                "Accept: text/plain",
+                "Connection: keep-alive ",
+                "Content-Length: 92",
+                "Content-Type: application/x-www-form-urlencoded",
+                "",
+                "userId=cu&password=password&name=%EC%9D%B4%EB%8F%99%EA%B7%9C&email=brainbackdoor%40gmail.com");
         final var socket = new StubSocket(httpRequest);
         final RequestHandler handler = new RequestHandler(socket);
 
