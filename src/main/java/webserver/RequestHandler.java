@@ -32,7 +32,18 @@ public class RequestHandler implements Runnable {
             byte[] body = getResponseBody(request);
             String contentType = getContentType(request.getHeader("Accept"));
 
-            writeResponse(out, contentType, body);
+            if (request.getPath().equals("/user/create")) {
+                DataOutputStream dos = new DataOutputStream(out);
+                try {
+                    dos.writeBytes("HTTP/1.1 302 Found \r\n");
+                    dos.writeBytes("Location: /index.html \r\n");
+                    dos.writeBytes("\r\n");
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                }
+            } else {
+                writeResponse(out, contentType, body);
+            }
         } catch (IOException | URISyntaxException e) {
             logger.error(e.getMessage());
         }
