@@ -92,4 +92,31 @@ class RequestHandlerTest {
 
         assertThat(socket.output()).isEqualTo(expected);
     }
+
+    @Test
+    void querystring() throws IOException, URISyntaxException {
+        // given
+        final String httpRequest = String.join("\r\n",
+                "GET /query?name=kane HTTP/1.1 ",
+                "Host: localhost:8080 ",
+                "Accept: text/plain",
+                "Connection: keep-alive ",
+                "",
+                "");
+        final var socket = new StubSocket(httpRequest);
+        final RequestHandler handler = new RequestHandler(socket);
+
+        // when
+        handler.run();
+
+        // then
+
+        var expected = "HTTP/1.1 200 OK \r\n" +
+                "Content-Type: text/plain;charset=utf-8 \r\n" +
+                "Content-Length: 10 \r\n" +
+                "\r\n" +
+                "hello kane";
+
+        assertThat(socket.output()).isEqualTo(expected);
+    }
 }
