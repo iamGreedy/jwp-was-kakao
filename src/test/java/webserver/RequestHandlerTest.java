@@ -172,6 +172,13 @@ class RequestHandlerTest {
         handler.run();
 
         // then
+        var expected = String.join("\r\n",
+                "HTTP/1.1 302 Found ",
+                "Location: /index.html ",
+                "",
+                "");
+        assertThat(socket.output()).isEqualTo(expected);
+
         User user = DataBase.findUserById("cu");
         assertThat(user.getUserId()).isEqualTo("cu");
         assertThat(user.getPassword()).isEqualTo("password");
