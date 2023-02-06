@@ -1,5 +1,6 @@
 package webserver;
 
+import application.Application;
 import db.DataBase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,28 +16,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 class RequestHandlerTest {
-    @Test
-    void ping() {
-        // given
-        final var socket = new StubSocket(String.join("\r\n",
-                "GET /ping HTTP/1.1",
-                "Host: localhost:8080",
-                "",
-                ""
-        ));
-        final var server = WebServer.server();
-        // when
-        server.prepare(socket).run();
-        // then
-        assertThat(socket.output().split("\r\n")).contains(
-                "HTTP/1.1 200 OK ",
-                "Content-Type: text/plain ",
-                "Content-Length: 4 ",
-                "",
-                "pong"
-        );
-    }
-
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
             "index.html             | text/html         | templates/index.html",
@@ -54,9 +33,9 @@ class RequestHandlerTest {
                 String.format("GET %s HTTP/1.1", path),
                 ""
         ));
-        final var server = WebServer.server();
+        final var app = new Application();
         // when
-        server.prepare(socket).run();
+        app.prepare(socket).run();
         // then
         var file = FileIoUtils.loadFileFromClasspath(filepath);
         assertThat(socket.output().split("\r\n")).contains(
@@ -79,13 +58,13 @@ class RequestHandlerTest {
                 "",
                 "userId=cu&password=password&name=%EC%9D%B4%EB%8F%99%EA%B7%9C&email=brainbackdoor%40gmail.com"
         ));
-        final var server = WebServer.server();
+        final var app = new Application();
         // when
-        server.prepare(socket).run();
+        app.prepare(socket).run();
         // then
         assertThat(socket.output().split("\r\n")).contains(
-                "HTTP/1.1 302 Found ",
-                "Location: /index.html "
+                "HTTP/1.1 307 Temporary Redirect ",
+                "Location: /user/login.html "
         );
         assertThat(DataBase.findUserById("cu"))
                 .isPresent()

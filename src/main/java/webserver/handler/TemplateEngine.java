@@ -15,7 +15,6 @@ import webserver.http.HttpResponse;
 import webserver.mime.Mime;
 
 import java.io.IOException;
-import java.util.function.Function;
 
 @Builder
 public class TemplateEngine implements Handler {
@@ -25,9 +24,9 @@ public class TemplateEngine implements Handler {
     private String root = "/";
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
     private final Handlebars handlebars = loadHandlebars();
-    private Function<HttpRequest, Object> contextProvider;
+    private Provider contextProvider;
 
-    public static TemplateEngine of(String root, Function<HttpRequest, Object> contextProvider) {
+    public static TemplateEngine of(String root, Provider contextProvider) {
         return TemplateEngine.builder().root(root).contextProvider(contextProvider).build();
     }
 
@@ -45,6 +44,9 @@ public class TemplateEngine implements Handler {
     @Override
     public boolean isRunnable(HttpRequest request) {
         try {
+            if (!request.getPath().endsWith(EXTENSION)) {
+                return false;
+            }
             getHandlebars().getLoader().sourceAt(trimExtension(request.getPath()));
             return true;
         } catch (IOException ioe) {
@@ -57,7 +59,7 @@ public class TemplateEngine implements Handler {
     public HttpResponse run(HttpRequest request) {
         var extension = request.getPath().substring(request.getPath().lastIndexOf("."));
         var template = getHandlebars().compile(trimExtension(request.getPath()));
-        var profilePage = template.apply(contextProvider.apply(request));
+        var profilePage = template.apply(contextProvider.provide(request));
         logger.debug("TemplateEngine(Handlebars, Location = {}, Template = {}) :\n {}", request.getPath(), template.filename(), profilePage);
         return HttpResponse.builder()
                            .status(HttpStatus.OK)
