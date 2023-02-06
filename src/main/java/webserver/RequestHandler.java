@@ -1,5 +1,7 @@
 package webserver;
 
+import db.DataBase;
+import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.FileIoUtils;
@@ -44,6 +46,16 @@ public class RequestHandler implements Runnable {
         }
         if (request.getPath().equals("/query")) {
             return ("hello " + request.getParameter("name")).getBytes();
+        }
+        if (request.getPath().equals("/user/create")) {
+            String userId = request.getParameter("userId");
+            String password = request.getParameter("password");
+            String name = request.getParameter("name");
+            String email = request.getParameter("email");
+
+            DataBase.addUser(new User(userId, password, name, email));
+
+            return "".getBytes();
         }
 
         return FileIoUtils.loadFileFromClasspath("static/" + request.getPath());

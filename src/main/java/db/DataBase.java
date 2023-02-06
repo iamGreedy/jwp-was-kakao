@@ -3,10 +3,11 @@ package db;
 import model.User;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 public class DataBase {
-    private static Map<String, User> users = Map.of();
+    private static Map<String, User> users = new HashMap<>();
 
     public static void addUser(User user) {
         users.put(user.getUserId(), user);
