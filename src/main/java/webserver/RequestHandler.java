@@ -38,8 +38,8 @@ public class RequestHandler implements Runnable {
     }
 
     private byte[] getResponseBody(HttpRequest request) throws IOException, URISyntaxException {
-        if (request.getPath().equals("/index.html")) {
-            return FileIoUtils.loadFileFromClasspath("templates/index.html");
+        if (request.getPath().endsWith(".html")) {
+            return FileIoUtils.loadFileFromClasspath("templates/" + request.getPath());
         }
         if (request.getPath().equals("/")) {
             return "Hello world".getBytes();
