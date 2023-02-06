@@ -39,10 +39,10 @@ public class RequestHandler implements Runnable {
         if (path.equals("/index.html")) {
             return FileIoUtils.loadFileFromClasspath("templates/index.html");
         }
-        if (path.equals("/css/styles.css")) {
-            return FileIoUtils.loadFileFromClasspath("static/css/styles.css");
+        if (path.equals("/")) {
+            return "Hello world".getBytes();
         }
-        return "Hello world".getBytes();
+        return FileIoUtils.loadFileFromClasspath("static/" + path);
     }
 
     private String getContentType(String accept) throws IOException, URISyntaxException {
