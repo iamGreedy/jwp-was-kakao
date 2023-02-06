@@ -8,7 +8,6 @@ import webserver.http.HttpResponse;
 
 public class Server {
     public static final Handler ROOT = Controller.builder()
-                                                 .handler(PathPattern.of("/", Redirection.of(true, "/index.html")))
                                                  // 존재하지 않는 세션을 보유하는 경우 자동으로 쿠키를 삭제하고 로그인을 요구하게 만든다.
                                                  .handler(Filter.of(request -> {
                                                      var sessionId = request.jar().get("JSESSIONID");
@@ -22,9 +21,14 @@ public class Server {
                                                      }
                                                      return null;
                                                  }))
-                                                 .handler(UserService.API)
+                                                 // `/` 패스로 요청하면 자동으로 `/index.html`로 영구 리다이렉션
+                                                 .handler(PathPattern.of("/", Redirection.of(true, "/index.html")))
+                                                 // `/user` 아래에 사용자 관련 API들을 주입
+                                                 .handler(SubpathPrefix.of("/user", UserService.API))
+                                                 // 템플릿 엔진을 이용한 리소스 제공
                                                  .handler(TemplateEngine.of(
-                                                         "/templates",
+                                                         "/templates", // "/src/resources/templates" 폴더 아래의 모든 요소들을 제공한다.
+                                                         // 각 패스에 해당하는 리소스를 주입
                                                          Provider.simple()
                                                                  .whenPath("/user/form.html", Provider.from(UserService.MUST_NOT_LOGIN, request -> null))
                                                                  .whenPath("/user/login.html", Provider.from(UserService.MUST_NOT_LOGIN, request -> null))
@@ -33,6 +37,7 @@ public class Server {
                                                                  )
 
                                                  ))
+                                                 // 정적 파일을 제공하는 폴더.
                                                  .handler(FileSystem.of("/static"))
                                                  .build();
     private static final int DEFAULT_PORT = 8080;

@@ -29,6 +29,10 @@ public class User {
         return email;
     }
 
+    public boolean isValidPassword(String targetPassword) {
+        return password.equals(targetPassword);
+    }
+
     @Override
     public String toString() {
         return "User [userId=" + userId + ", password=" + password + ", name=" + name + ", email=" + email + "]";
