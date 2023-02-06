@@ -6,6 +6,8 @@ import utils.FileIoUtils;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -97,7 +99,7 @@ class RequestHandlerTest {
     void querystring() throws IOException, URISyntaxException {
         // given
         final String httpRequest = String.join("\r\n",
-                "GET /query?name=kane HTTP/1.1 ",
+                "GET /query?name=" + URLEncoder.encode("케인", Charset.defaultCharset()) + " HTTP/1.1 ",
                 "Host: localhost:8080 ",
                 "Accept: text/plain",
                 "Connection: keep-alive ",
@@ -113,9 +115,9 @@ class RequestHandlerTest {
 
         var expected = "HTTP/1.1 200 OK \r\n" +
                 "Content-Type: text/plain;charset=utf-8 \r\n" +
-                "Content-Length: 10 \r\n" +
+                "Content-Length: 12 \r\n" +
                 "\r\n" +
-                "hello kane";
+                "hello 케인";
 
         assertThat(socket.output()).isEqualTo(expected);
     }
