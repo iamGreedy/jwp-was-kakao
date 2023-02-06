@@ -2,6 +2,7 @@ package webserver;
 
 import org.junit.jupiter.api.Test;
 import support.StubSocket;
+import utils.FileIoUtils;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -52,13 +53,12 @@ class RequestHandlerTest {
         handler.run();
 
         // then
-
+        var indexHtml = FileIoUtils.loadFileFromClasspath("templates/index.html");
         var expected = "HTTP/1.1 200 OK \r\n" +
                 "Content-Type: text/html;charset=utf-8 \r\n" +
-                "Content-Length: 5 \r\n" +
+                "Content-Length: " + indexHtml.length + " \r\n" +
                 "\r\n" +
-                "index";
-//                new String(FileIoUtils.loadFileFromClasspath("templates/index.html"));
+                new String(indexHtml);
 
         assertThat(socket.output()).isEqualTo(expected);
     }
