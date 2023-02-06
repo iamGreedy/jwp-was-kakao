@@ -39,6 +39,17 @@ public class HttpRequest {
     }
 
     public String getPath() {
-        return startLine.split(" ")[1];
+        return startLine.split(" ")[1].split("\\?")[0];
+    }
+
+    public String getParameter(String key) {
+        String[] queryStrings = startLine.split(" ")[1].split("\\?")[1].split("&");
+
+        for (String queryString : queryStrings) {
+            if (key.equals(queryString.split("=")[0])) {
+                return queryString.split("=")[1];
+            }
+        }
+        return null;
     }
 }

@@ -26,7 +26,7 @@ public class RequestHandler implements Runnable {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             HttpRequest request = HttpRequest.from(in);
 
-            byte[] body = getResponseBody(request.getPath());
+            byte[] body = getResponseBody(request);
             String contentType = getContentType(request.getHeader("Accept"));
 
             writeResponse(out, contentType, body);
@@ -35,14 +35,18 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    private byte[] getResponseBody(String path) throws IOException, URISyntaxException {
-        if (path.equals("/index.html")) {
+    private byte[] getResponseBody(HttpRequest request) throws IOException, URISyntaxException {
+        if (request.getPath().equals("/index.html")) {
             return FileIoUtils.loadFileFromClasspath("templates/index.html");
         }
-        if (path.equals("/")) {
+        if (request.getPath().equals("/")) {
             return "Hello world".getBytes();
         }
-        return FileIoUtils.loadFileFromClasspath("static/" + path);
+        if (request.getPath().equals("/query")) {
+            return ("hello " + request.getParameter("name")).getBytes();
+        }
+
+        return FileIoUtils.loadFileFromClasspath("static/" + request.getPath());
     }
 
     private String getContentType(String accept) throws IOException, URISyntaxException {
@@ -59,7 +63,6 @@ public class RequestHandler implements Runnable {
     }
 
     private void response200Header(DataOutputStream dos, String contentType, int lengthOfBodyContent) {
-
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
             dos.writeBytes("Content-Type: " + contentType + " \r\n");
