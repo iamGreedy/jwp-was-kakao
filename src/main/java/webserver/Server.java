@@ -1,9 +1,11 @@
 package webserver;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import webserver.handler.Controller;
 import webserver.handler.Handler;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
@@ -14,27 +16,19 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@RequiredArgsConstructor
 public class Server {
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
-    private final Controller defaultController;
-    private final Executor executor;
+    private final Handler defaultController;
+    @Getter(lazy = true, value = AccessLevel.PRIVATE)
+    private final ExecutorService executor = loadExecutor();
 
-    public Server() {
-        this.defaultController = Controller.of();
-        this.executor = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
-    }
 
-    public Server(Executor executor) {
-        this.defaultController = Controller.of();
-        this.executor = executor;
-    }
-
-    public Server addHandler(Handler handler) {
-        defaultController.addHandler(handler);
-        return this;
+    private ExecutorService loadExecutor() {
+        return Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
     private Runnable prepare(Socket connection) {
@@ -63,6 +57,7 @@ public class Server {
                     hre.getResponse().writeStream(dos);
                 } catch (Exception e) {
                     logger.error(e.getMessage());
+                    e.printStackTrace();
                     HttpResponse
                             .builder()
                             .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -82,14 +77,16 @@ public class Server {
     }
 
     public void listen(int port) throws Exception {
+
         // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
         try (var listenSocket = new ServerSocket(port)) {
             logger.info("Web Application Server started {} port.", port);
             Socket connection;
             // 클라이언트가 연결될때까지 대기한다.
             while ((connection = listenSocket.accept()) != null) {
-                executor.execute(prepare(connection));
+                getExecutor().execute(prepare(connection));
             }
         }
     }
+
 }
