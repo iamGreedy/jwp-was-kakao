@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HttpRequest {
-    private final String startLine;
+    private final HttpRequestLine requestLine;
     private final List<String> headers;
 
-    private HttpRequest(String startLine, List<String> headers) {
-        this.startLine = startLine;
+    private HttpRequest(HttpRequestLine requestLine, List<String> headers) {
+        this.requestLine = requestLine;
         this.headers = headers;
     }
 
@@ -25,7 +25,7 @@ public class HttpRequest {
             headers.add(line);
             line = bufferedReader.readLine();
         }
-        return new HttpRequest(startLine, headers);
+        return new HttpRequest(HttpRequestLine.from(startLine), headers);
     }
 
     public String getHeader(String key) {
@@ -39,17 +39,10 @@ public class HttpRequest {
     }
 
     public String getPath() {
-        return startLine.split(" ")[1].split("\\?")[0];
+        return requestLine.getPath();
     }
 
     public String getParameter(String key) {
-        String[] queryStrings = startLine.split(" ")[1].split("\\?")[1].split("&");
-
-        for (String queryString : queryStrings) {
-            if (key.equals(queryString.split("=")[0])) {
-                return queryString.split("=")[1];
-            }
-        }
-        return null;
+        return requestLine.getParameter(key);
     }
 }
