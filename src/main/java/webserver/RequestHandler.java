@@ -28,37 +28,31 @@ public class RequestHandler implements Runnable {
                 connection.getPort());
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             HttpRequest request = HttpRequest.from(in);
-
-            byte[] body = getResponseBody(request);
-            String contentType = getContentType(request.getHeader("Accept"));
-
-            if (request.getPath().equals("/user/create")) {
-                DataOutputStream dos = new DataOutputStream(out);
-                try {
-                    dos.writeBytes("HTTP/1.1 302 Found \r\n");
-                    dos.writeBytes("Location: /index.html \r\n");
-                    dos.writeBytes("\r\n");
-                } catch (IOException e) {
-                    logger.error(e.getMessage());
-                }
-            } else {
-                writeResponse(out, contentType, body);
-            }
+            HttpResponse response = handleRequest(request);
+            writeResponse(out, response);
         } catch (IOException | URISyntaxException e) {
             logger.error(e.getMessage());
         }
     }
 
-    private byte[] getResponseBody(HttpRequest request) throws IOException, URISyntaxException {
+    private HttpResponse handleRequest(HttpRequest request) throws IOException, URISyntaxException {
+        String contentType = getContentType(request);
+
         if (request.getPath().endsWith(".html")) {
-            return FileIoUtils.loadFileFromClasspath("templates" + request.getPath());
+            byte[] body = FileIoUtils.loadFileFromClasspath("templates" + request.getPath());
+            return HttpResponse.ok(Map.of("Content-Type", contentType), body);
         }
+
         if (request.getPath().equals("/")) {
-            return "Hello world".getBytes();
+            return HttpResponse.ok(Map.of("Content-Type", contentType), "Hello world".getBytes());
         }
+
         if (request.getPath().equals("/query")) {
-            return ("hello " + request.getParameter("name")).getBytes();
+            return HttpResponse.ok(Map.of("Content-Type", contentType),
+                    ("hello " + request.getParameter("name")).getBytes()
+            );
         }
+
         if (request.getMethod().equals("POST") && request.getPath().equals("/user/create")) {
             Map<String, String> applicationForm = request.toApplicationForm();
             String userId = applicationForm.get("userId");
@@ -69,35 +63,47 @@ public class RequestHandler implements Runnable {
             User user = new User(userId, password, name, email);
             DataBase.addUser(user);
             logger.debug("{}", user);
+            return HttpResponse.redirect(Map.of(), "/index.html");
 
-            return "".getBytes();
         }
+
         if (request.getMethod().equals("POST") && request.getPath().equals("/post")) {
             Map<String, String> applicationForm = request.toApplicationForm();
-            return String.format("hello %s", applicationForm.get("name")).getBytes();
+            return HttpResponse.ok(
+                    Map.of("Content-Type", contentType),
+                    String.format("hello %s", applicationForm.get("name")).getBytes()
+            );
         }
 
-        return FileIoUtils.loadFileFromClasspath("static" + request.getPath());
+        return HttpResponse.ok(
+                Map.of("Content-Type", contentType),
+                FileIoUtils.loadFileFromClasspath("static" + request.getPath())
+        );
     }
 
-    private String getContentType(String accept) throws IOException, URISyntaxException {
+    private String getContentType(HttpRequest request) throws IOException, URISyntaxException {
+        String accept = request.getHeader("Accept");
+
         if (accept == null || accept.isBlank()) {
             return "text/plain";
         }
         return accept.split(",")[0] + ";charset=utf-8";
     }
 
-    private void writeResponse(OutputStream out, String contentType, byte[] body) {
+    private void writeResponse(OutputStream out, HttpResponse response) {
         DataOutputStream dos = new DataOutputStream(out);
-        response200Header(dos, contentType, body.length);
-        responseBody(dos, body);
+        responseHeader(dos, response);
+        responseBody(dos, response.getBody());
     }
 
-    private void response200Header(DataOutputStream dos, String contentType, int lengthOfBodyContent) {
+    private void responseHeader(DataOutputStream dos, HttpResponse response) {
         try {
-            dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type: " + contentType + " \r\n");
-            dos.writeBytes("Content-Length: " + lengthOfBodyContent + " \r\n");
+            dos.writeBytes(response.getStatusLine() + " \r\n");
+
+            for (var entry : response.getHeader().entrySet()) {
+                dos.writeBytes(entry.getKey() + ": " + entry.getValue() + " \r\n");
+            }
+
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             logger.error(e.getMessage());

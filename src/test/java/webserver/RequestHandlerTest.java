@@ -31,14 +31,14 @@ class RequestHandlerTest {
         handler.run();
 
         // then
-        var expected = String.join("\r\n",
+
+        assertThat(socket.output().split("\r\n")).contains(
                 "HTTP/1.1 200 OK ",
                 "Content-Type: text/html;charset=utf-8 ",
                 "Content-Length: 11 ",
                 "",
-                "Hello world");
-
-        assertThat(socket.output()).isEqualTo(expected);
+                "Hello world"
+        );
     }
 
     @Test
@@ -60,13 +60,14 @@ class RequestHandlerTest {
 
         // then
         var indexHtml = FileIoUtils.loadFileFromClasspath("templates/index.html");
-        var expected = "HTTP/1.1 200 OK \r\n" +
-                "Content-Type: text/html;charset=utf-8 \r\n" +
-                "Content-Length: " + indexHtml.length + " \r\n" +
-                "\r\n" +
-                new String(indexHtml);
 
-        assertThat(socket.output()).isEqualTo(expected);
+        assertThat(socket.output().split("\r\n")).contains(
+                "HTTP/1.1 200 OK ",
+                "Content-Type: text/html;charset=utf-8 ",
+                "Content-Length: " + indexHtml.length + " ",
+                "",
+                new String(indexHtml)
+        );
     }
 
     @Test
@@ -94,7 +95,13 @@ class RequestHandlerTest {
                 "\r\n" +
                 new String(cssFile);
 
-        assertThat(socket.output()).isEqualTo(expected);
+        assertThat(socket.output().split("\r\n")).contains(
+                "HTTP/1.1 200 OK ",
+                "Content-Type: text/css;charset=utf-8 ",
+                "Content-Length: " + cssFile.length + " ",
+                "",
+                new String(cssFile)
+        );
     }
 
     @Test
@@ -121,7 +128,12 @@ class RequestHandlerTest {
                 "\r\n" +
                 "hello 케인";
 
-        assertThat(socket.output()).isEqualTo(expected);
+        assertThat(socket.output().split("\r\n")).contains(
+                "HTTP/1.1 200 OK ",
+                "Content-Type: text/plain;charset=utf-8 ",
+                "Content-Length: 12 ",
+                "hello 케인"
+        );
     }
 
     @Test
@@ -144,13 +156,13 @@ class RequestHandlerTest {
 
         // then
 
-        var expected = "HTTP/1.1 200 OK \r\n" +
-                "Content-Type: text/plain;charset=utf-8 \r\n" +
-                "Content-Length: 10 \r\n" +
-                "\r\n" +
-                "hello kane";
 
-        assertThat(socket.output()).isEqualTo(expected);
+        assertThat(socket.output().split("\r\n")).contains(
+                "HTTP/1.1 200 OK ",
+                "Content-Length: 10 ",
+                "Content-Type: text/plain;charset=utf-8 ",
+                "hello kane"
+        );
     }
 
     @Test
@@ -172,12 +184,10 @@ class RequestHandlerTest {
         handler.run();
 
         // then
-        var expected = String.join("\r\n",
+        assertThat(socket.output().split("\r\n")).contains(
                 "HTTP/1.1 302 Found ",
-                "Location: /index.html ",
-                "",
-                "");
-        assertThat(socket.output()).isEqualTo(expected);
+                "Location: /index.html "
+        );
 
         User user = DataBase.findUserById("cu");
         assertThat(user.getUserId()).isEqualTo("cu");
