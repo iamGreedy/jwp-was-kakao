@@ -37,7 +37,7 @@ public class Server {
         return this;
     }
 
-    public Runnable prepare(Socket connection) {
+    private Runnable prepare(Socket connection) {
         logger.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(),
                 connection.getPort());
 
@@ -61,6 +61,13 @@ public class Server {
                     response.writeStream(dos);
                 } catch (HttpResponseException hre) {
                     hre.getResponse().writeStream(dos);
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
+                    HttpResponse
+                            .builder()
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .build()
+                            .writeStream(dos);
                 }
             } catch (IOException e) {
                 logger.error(e.getMessage());
