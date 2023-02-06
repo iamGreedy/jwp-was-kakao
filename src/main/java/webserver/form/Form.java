@@ -1,6 +1,8 @@
 package webserver.form;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import webserver.http.HttpResponse;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +32,14 @@ public class Form {
         }
         return Optional.empty();
     }
+
+    public String mustField(String key) {
+        return field(key).orElseThrow(() -> HttpResponse.builder()
+                                                        .status(HttpStatus.BAD_REQUEST)
+                                                        .build()
+                                                        .toException());
+    }
+
 
     public List<String> fields(String key) {
         if (data.containsKey(key)) {

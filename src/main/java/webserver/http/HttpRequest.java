@@ -1,9 +1,7 @@
 package webserver.http;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
+import org.springframework.http.HttpStatus;
 import webserver.cookie.CookieJar;
 import webserver.form.Form;
 import webserver.mime.Mime;
@@ -35,81 +33,79 @@ public class HttpRequest {
     @Getter(AccessLevel.NONE)
     private CookieJar cookieJar;
 
+    @SneakyThrows(IOException.class)
     public static HttpRequest from(InputStream input) {
-        try {
-            var reader = new BufferedReader(new InputStreamReader(input));
-            var start = REQUEST_START.matcher(reader.readLine());
-            if (!start.matches()) {
+        // 시간이 너무 길어지면 드롭시키는 코드도 추가하면 좋을텐데.
+        var reader = new BufferedReader(new InputStreamReader(input));
+        var start = REQUEST_START.matcher(reader.readLine());
+        if (!start.matches()) {
+            throw new RuntimeException("올바르지 않은 HTTP 형식");
+        }
+        var method = start.group(1);
+        var pathQuery = start.group(2);
+        var sepIndex = pathQuery.lastIndexOf("?");
+
+        String path = "";
+        Map<String, String> query = Map.of();
+        if (sepIndex == -1) {
+            path = pathQuery;
+        } else {
+            path = pathQuery.substring(0, sepIndex);
+            var eachQueryElems = start.group(sepIndex + 1).split("&");
+            query = Arrays.stream(eachQueryElems)
+                          .map(v -> {
+
+                              var keyval = v.split("=");
+                              return Map.entry(
+                                      URLDecoder.decode(keyval[0], StandardCharsets.UTF_8),
+                                      URLDecoder.decode(keyval[1], StandardCharsets.UTF_8));
+                          })
+                          .collect(Collectors.toMap(
+                                  Map.Entry::getKey,
+                                  Map.Entry::getValue
+                          ));
+        }
+
+        var version = start.group(3);
+        //
+        var header = new HashMap<String, List<String>>();
+        while (reader.ready()) {
+            var line = reader.readLine();
+            if (line.isEmpty()) {
+                break;
+            }
+            var field = REQUEST_HEADER.matcher(line);
+            if (!field.matches()) {
                 throw new RuntimeException("올바르지 않은 HTTP 형식");
             }
-            var method = start.group(1);
-            var pathQuery = start.group(2);
-            var sepIndex = pathQuery.lastIndexOf("?");
-
-            String path = "";
-            Map<String, String> query = Map.of();
-            if (sepIndex == -1) {
-                path = pathQuery;
-            } else {
-                path = pathQuery.substring(0, sepIndex);
-                var eachQueryElems = start.group(sepIndex + 1).split("&");
-                query = Arrays.stream(eachQueryElems)
-                              .map(v -> {
-
-                                  var keyval = v.split("=");
-                                  return Map.entry(
-                                          URLDecoder.decode(keyval[0], StandardCharsets.UTF_8),
-                                          URLDecoder.decode(keyval[1], StandardCharsets.UTF_8));
-                              })
-                              .collect(Collectors.toMap(
-                                      Map.Entry::getKey,
-                                      Map.Entry::getValue
-                              ));
+            if (!header.containsKey(field.group(1))) {
+                header.put(field.group(1), new ArrayList<>());
             }
-
-            var version = start.group(3);
-
-            //
-            var header = new HashMap<String, List<String>>();
-            while (reader.ready()) {
-                var line = reader.readLine();
-                if (line.isEmpty()) {
-                    break;
-                }
-                var field = REQUEST_HEADER.matcher(line);
-                if (!field.matches()) {
-                    throw new RuntimeException("올바르지 않은 HTTP 형식");
-                }
-                if (!header.containsKey(field.group(1))) {
-                    header.put(field.group(1), new ArrayList<>());
-                }
-                header.get(field.group(1)).add(field.group(2));
-            }
-            int size = 0;
-            if (header.get("Content-Length") != null && header.get("Content-Length").size() == 1) {
-                size = Integer.parseInt(header.get("Content-Length").get(0));
-            } else {
-                size = input.available();
-            }
-            var buffer = new char[size];
-            reader.read(buffer);
-            var body = new String(buffer);
-            //
-
-            return new HttpRequest(
-                    method,
-                    path,
-                    query,
-                    version,
-                    header,
-                    body,
-                    Optional.ofNullable(header.get("Cookie"))
-                            .map(cookie -> CookieJar.parse(cookie.toArray(String[]::new)))
-                            .orElseGet(CookieJar::new)
-            );
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            header.get(field.group(1)).add(field.group(2));
         }
+        // FIXME: 컨턴츠 길이가 주어지지 않으면 가능한 데이터를 전체 읽음 이는 문제가 발생할 소지가 큼 다만 이는 수정하기에는 너무 어렵고 과제의 범위를 일부 벗어날 것이라 생각해 이는 제외하고 구현함.
+        int size = 0;
+        if (header.get("Content-Length") != null && header.get("Content-Length").size() == 1) {
+            size = Integer.parseInt(header.get("Content-Length").get(0));
+        } else {
+            size = input.available();
+        }
+        var buffer = new char[size];
+        reader.read(buffer);
+        var body = new String(buffer);
+        //
+
+        return new HttpRequest(
+                method,
+                path,
+                query,
+                version,
+                header,
+                body,
+                Optional.ofNullable(header.get("Cookie"))
+                        .map(cookie -> CookieJar.parse(cookie.toArray(String[]::new)))
+                        .orElseGet(CookieJar::new)
+        );
     }
 
     public Optional<String> query(String key) {
@@ -142,6 +138,10 @@ public class HttpRequest {
             return Optional.of(Form.from(body));
         }
         return Optional.empty();
+    }
+
+    public Form mustForm() {
+        return toForm().orElseThrow(() -> HttpResponse.builder().status(HttpStatus.BAD_REQUEST).build().toException());
     }
 
     public HttpRequest withPath(String path) {
