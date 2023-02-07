@@ -1,5 +1,6 @@
 package webserver;
 
+import db.DataBase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -11,6 +12,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 class RequestHandlerTest {
     @Test
@@ -63,6 +65,34 @@ class RequestHandlerTest {
                 String.format("Content-Length: %s ", file.length),
                 "",
                 new String(file, StandardCharsets.UTF_8)
+        );
+    }
+
+    @Test
+    void userCreate() {
+        // given
+        final var socket = new StubSocket(String.join("\r\n",
+                "POST /user/create HTTP/1.1",
+                "Host: localhost:8080",
+                "Content-Type: application/x-www-form-urlencoded",
+                "Content-Length: 92",
+                "",
+                "userId=cu&password=password&name=%EC%9D%B4%EB%8F%99%EA%B7%9C&email=brainbackdoor%40gmail.com"
+        ));
+        final var server = WebServer.server();
+        // when
+        server.prepare(socket).run();
+        // then
+        assertThat(socket.output().split("\r\n")).contains(
+                "HTTP/1.1 204 No Content "
+        );
+        var user = DataBase.findUserById("cu");
+        assertThat(user).isNotNull();
+        assertAll(
+                () -> assertThat(user.getUserId()).isEqualTo("cu"),
+                () -> assertThat(user.getPassword()).isEqualTo("password"),
+                () -> assertThat(user.getName()).isEqualTo("이동규"),
+                () -> assertThat(user.getEmail()).isEqualTo("brainbackdoor@gmail.com")
         );
     }
 }
