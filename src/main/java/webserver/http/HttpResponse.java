@@ -36,7 +36,7 @@ public class HttpResponse {
                     outputStream.writeBytes(entry.getKey());
                     outputStream.writeBytes(": ");
                     outputStream.writeBytes(value);
-                    outputStream.writeBytes("\r\n");
+                    outputStream.writeBytes(" \r\n");
                 }
             }
             outputStream.writeBytes("\r\n");
