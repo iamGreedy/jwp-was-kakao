@@ -1,7 +1,6 @@
 package webserver.handler;
 
 import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 import com.github.jknack.handlebars.io.TemplateLoader;
 import lombok.AccessLevel;
@@ -13,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
+import webserver.mime.Mime;
 
 import java.io.IOException;
 import java.util.function.Function;
@@ -55,11 +55,13 @@ public class TemplateEngine implements Handler {
     @Override
     @SneakyThrows({IOException.class})
     public HttpResponse run(HttpRequest request) {
-        Template template = getHandlebars().compile(trimExtension(request.getPath()));
-        String profilePage = template.apply(contextProvider.apply(request));
+        var extension = request.getPath().substring(request.getPath().lastIndexOf("."));
+        var template = getHandlebars().compile(trimExtension(request.getPath()));
+        var profilePage = template.apply(contextProvider.apply(request));
         logger.debug("TemplateEngine(Handlebars, Location = {}, Template = {}) :\n {}", request.getPath(), template.filename(), profilePage);
         return HttpResponse.builder()
                            .status(HttpStatus.OK)
+                           .header("Content-Type", Mime.fromExtension(extension).map(Mime::getValue))
                            .body(profilePage)
                            .build();
     }

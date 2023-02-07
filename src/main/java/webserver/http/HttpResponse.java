@@ -5,6 +5,7 @@ import webserver.cookie.Cookie;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -110,14 +111,14 @@ public class HttpResponse {
         }
 
         public Builder body(String body) {
-            result.body = body.getBytes();
-            result.header.put("Content-Length", List.of(Integer.toString(body.length())));
+            result.body = body.getBytes(StandardCharsets.UTF_8);
+            result.header.put("Content-Length", List.of(Integer.toString(result.body.length)));
             return this;
         }
 
         public Builder body(byte[] body) {
             result.body = body;
-            result.header.put("Content-Length", List.of(Integer.toString(body.length)));
+            result.header.put("Content-Length", List.of(Integer.toString(result.body.length)));
             return this;
         }
 
