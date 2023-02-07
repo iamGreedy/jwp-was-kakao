@@ -1,5 +1,6 @@
 package application;
 
+import application.filter.Authorization;
 import application.service.UserService;
 import db.DataBase;
 import db.SessionManager;
@@ -19,7 +20,6 @@ public class Application extends webserver.Server {
     @Override
     public Handler newHandler() {
         return Controller.builder()
-                         .handler(PathPattern.of("/", Redirection.of(true, "/index.html")))
                          // 존재하지 않는 세션을 보유하는 경우 자동으로 쿠키를 삭제하고 로그인을 요구하게 만든다.
                          .handler(Filter.of(request -> {
                              var sessionId = request.jar().get("JSESSIONID");
@@ -33,17 +33,23 @@ public class Application extends webserver.Server {
                              }
                              return null;
                          }))
-                         .handler(new UserService())
+                         // `/` 패스로 요청하면 자동으로 `/index.html`로 영구 리다이렉션
+                         .handler(PathPattern.of("/", Redirection.of(true, "/index.html")))
+                         // `/user` 아래에 사용자 관련 API들을 주입
+                         .handler(SubpathPrefix.of("/user", new UserService()))
+                         // 템플릿 엔진을 이용한 리소스 제공
                          .handler(TemplateEngine.of(
-                                 "/templates",
+                                 "/templates", // "/src/resources/templates" 폴더 아래의 모든 요소들을 제공한다.
+                                 // 각 패스에 해당하는 리소스를 주입
                                  Provider.simple()
-                                         .whenPath("/user/form.html", Provider.from(UserService.MUST_NOT_LOGIN, request -> null))
-                                         .whenPath("/user/login.html", Provider.from(UserService.MUST_NOT_LOGIN, request -> null))
-                                         .whenPath("/user/list.html", Provider.from(UserService.MUST_LOGIN, request -> DataBase.findAll()
-                                                                                                                               .toArray())
+                                         .whenPath("/user/form.html", Provider.from(Authorization.RequireNotLogin, request -> null))
+                                         .whenPath("/user/login.html", Provider.from(Authorization.RequireNotLogin, request -> null))
+                                         .whenPath("/user/list.html", Provider.from(Authorization.RequireLogin, request -> DataBase.findAll()
+                                                                                                                                   .toArray())
                                          )
 
                          ))
+                         // 정적 파일 제공
                          .handler(FileSystem.of("/static"))
                          .build();
     }
