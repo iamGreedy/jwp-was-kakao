@@ -25,6 +25,20 @@ public class WebServer {
         } else {
             port = Integer.parseInt(args[0]);
         }
+        var server = server();
+        // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
+        try (var listenSocket = new ServerSocket(port)) {
+            logger.info("Web Application Server started {} port.", port);
+            Socket connection;
+            // 클라이언트가 연결될때까지 대기한다.
+            while ((connection = listenSocket.accept()) != null) {
+                Thread thread = new Thread(server.prepare(connection));
+                thread.start();
+            }
+        }
+    }
+
+    public static Server server() {
         var server = new Server();
         server
                 .addHandler(
@@ -92,15 +106,6 @@ public class WebServer {
                 .addHandler(FileSystem.of("/templates"))
                 .addHandler(FileSystem.of("/static"))
         ;
-        // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
-        try (var listenSocket = new ServerSocket(port)) {
-            logger.info("Web Application Server started {} port.", port);
-            Socket connection;
-            // 클라이언트가 연결될때까지 대기한다.
-            while ((connection = listenSocket.accept()) != null) {
-                Thread thread = new Thread(server.prepare(connection));
-                thread.start();
-            }
-        }
+        return server;
     }
 }
