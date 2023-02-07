@@ -43,9 +43,9 @@ public class FileSystem implements Handler {
         var resource = FileSystem.class.getResource(getPath(request.getPath()));
         try {
             var path = Path.of(resource.toURI());
-            var extension = Optional.ofNullable(path.toString())
+            var extension = Optional.of(path.toString())
                                     .filter(f -> f.contains("."))
-                                    .map(f -> f.substring(path.toString().lastIndexOf(".") + 1));
+                                    .map(f -> f.substring(path.toString().lastIndexOf(".")));
             var bytes = Files.readAllBytes(path);
             return HttpResponse.builder()
                                .status(HttpStatus.OK)
