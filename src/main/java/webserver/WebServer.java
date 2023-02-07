@@ -73,7 +73,8 @@ public class WebServer {
                                       }
                                       DataBase.addUser(new User(userId.get(), password.get(), name.get(), email.get()));
                                       return HttpResponse.builder()
-                                                         .status(HttpStatus.NO_CONTENT)
+                                                         .status(HttpStatus.FOUND)
+                                                         .header("Location", "/index.html")
                                                          .build();
                                   })
                                   .build()
