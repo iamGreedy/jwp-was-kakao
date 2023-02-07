@@ -84,7 +84,8 @@ class RequestHandlerTest {
         server.prepare(socket).run();
         // then
         assertThat(socket.output().split("\r\n")).contains(
-                "HTTP/1.1 204 No Content "
+                "HTTP/1.1 302 Found ",
+                "Location: /index.html "
         );
         var user = DataBase.findUserById("cu");
         assertThat(user).isNotNull();
