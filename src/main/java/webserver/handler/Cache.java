@@ -17,11 +17,14 @@ import java.util.function.BiFunction;
 public class Cache implements Handler {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:dd 'GMT'");
     private final Handler handler;
-    private final boolean noCache;
-    private final boolean noStore;
+    @Builder.Default
+    private final int maxAge = 0;
+    @Builder.Default
+    private final boolean noCache = false;
+    @Builder.Default
+    private final boolean noStore = false;
     @Builder.Default
     private final CacheVisible visible = CacheVisible.Implicit;
-    private final int maxAge;
     @Builder.Default
     private final BiFunction<HttpRequest, HttpResponse, Optional<ZonedDateTime>> lastModified = null;
     @Builder.Default

@@ -6,6 +6,7 @@ import db.Database;
 import db.SessionManager;
 import org.springframework.http.HttpStatus;
 import webserver.Server;
+import webserver.enums.CacheVisible;
 import webserver.handler.*;
 import webserver.http.HttpResponse;
 
@@ -64,7 +65,11 @@ public class Application extends Server {
 
                          ))
                          // 정적 파일 제공
-                         .handler(FileSystem.of("/static"))
+                         .handler(Cache.builder()
+                                       .handler(FileSystem.of("/static"))
+                                       .visible(CacheVisible.Public)
+                                       .maxAge(60 * 30) // 30 분
+                                       .build())
                          .build();
     }
 }
