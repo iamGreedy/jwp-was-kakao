@@ -1,7 +1,7 @@
 package application.service;
 
 import application.filter.Authorization;
-import db.DataBase;
+import db.Database;
 import db.SessionManager;
 import model.User;
 import org.springframework.http.HttpMethod;
@@ -36,7 +36,7 @@ public class UserService extends Server {
                                              var name = form.mustField("name");
                                              var email = form.mustField("email");
                                              // DB 삽입
-                                             DataBase.addUser(new User(userId, password, name, email));
+                                             Database.addUser(new User(userId, password, name, email));
                                              // Http 리턴
                                              return HttpResponse.builder()
                                                                 .status(HttpStatus.TEMPORARY_REDIRECT)
@@ -57,7 +57,7 @@ public class UserService extends Server {
                                              var userId = form.mustField("userId");
                                              var password = form.mustField("password");
                                              // 데이터베이스 접근
-                                             return DataBase.findUserById(userId)
+                                             return Database.findUserById(userId)
                                                             // 존재하는 유저여야 함
                                                             .filter(user -> user.isValidPassword(password))
                                                             .map((user) -> {

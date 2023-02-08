@@ -2,7 +2,7 @@ package application;
 
 import application.filter.Authorization;
 import application.service.UserService;
-import db.DataBase;
+import db.Database;
 import db.SessionManager;
 import org.springframework.http.HttpStatus;
 import webserver.Server;
@@ -12,7 +12,7 @@ import webserver.http.HttpResponse;
 public class Application extends Server {
     private static final int DEFAULT_PORT = 8080;
 
-    public static void main(String args[]) throws Exception {
+    public static void main(String[] args) throws Exception {
         int port = (args == null || args.length == 0) ? DEFAULT_PORT : Integer.parseInt(args[0]);
         new Application()
                 .listen(port);
@@ -58,7 +58,7 @@ public class Application extends Server {
                                          // 요청된 템플릿이 /user/list.html 경로로 요청된 경우
                                          // -> 로그인이 되지 않았는지 검증한다.
                                          // -> 템플릿에 DataBase의 모든 값을 요청한다.
-                                         .whenPath("/user/list.html", Provider.from(Authorization.RequireLogin, request -> DataBase.findAll()
+                                         .whenPath("/user/list.html", Provider.from(Authorization.RequireLogin, request -> Database.findAll()
                                                                                                                                    .toArray())
                                          )
 

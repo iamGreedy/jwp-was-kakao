@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class DataBase {
+public class Database {
     private static Map<String, User> users = new HashMap<>();
 
     public static void addUser(User user) {

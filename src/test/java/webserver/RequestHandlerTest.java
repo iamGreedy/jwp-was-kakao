@@ -1,7 +1,7 @@
 package webserver;
 
 import application.Application;
-import db.DataBase;
+import db.Database;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -66,7 +66,7 @@ class RequestHandlerTest {
                 "HTTP/1.1 307 Temporary Redirect ",
                 "Location: /user/login.html "
         );
-        assertThat(DataBase.findUserById("cu"))
+        assertThat(Database.findUserById("cu"))
                 .isPresent()
                 .get()
                 .satisfies(user -> assertAll(
