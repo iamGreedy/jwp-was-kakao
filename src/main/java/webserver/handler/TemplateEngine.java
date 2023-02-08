@@ -7,8 +7,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
@@ -17,9 +16,9 @@ import webserver.mime.Mime;
 import java.io.IOException;
 
 @Builder
+@Slf4j
 public class TemplateEngine implements Handler {
     private static final String EXTENSION = ".html";
-    private static final Logger logger = LoggerFactory.getLogger(TemplateEngine.class);
     @Builder.Default
     private String root = "/";
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
@@ -60,7 +59,7 @@ public class TemplateEngine implements Handler {
         var extension = request.getPath().substring(request.getPath().lastIndexOf("."));
         var template = getHandlebars().compile(trimExtension(request.getPath()));
         var profilePage = template.apply(contextProvider.provide(request));
-        logger.debug("TemplateEngine(Handlebars, Location = {}, Template = {}) :\n {}", request.getPath(), template.filename(), profilePage);
+        log.debug("TemplateEngine(Handlebars, Location = {}, Template = {}) :\n {}", request.getPath(), template.filename(), profilePage);
         return HttpResponse.builder()
                            .status(HttpStatus.OK)
                            .header("Content-Type", Mime.fromExtension(extension).map(Mime::getValue))

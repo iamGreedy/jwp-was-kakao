@@ -3,8 +3,7 @@ package webserver;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import webserver.handler.Handler;
 import webserver.http.HttpRequest;
@@ -22,8 +21,8 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 @RequiredArgsConstructor
+@Slf4j
 public abstract class Server implements Handler {
-    private static final Logger logger = LoggerFactory.getLogger(Server.class);
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
     private final ExecutorService executor = loadExecutor();
     private Handler cachedHandler = null;
@@ -55,13 +54,14 @@ public abstract class Server implements Handler {
     public Runnable prepare(Supplier<Socket> socketSupplier) {
         return () -> {
             try (var connection = socketSupplier.get()) {
-                logger.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(), connection.getPort());
+
+                log.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(), connection.getPort());
                 var in = connection.getInputStream();
                 var out = connection.getOutputStream();
                 var dos = new DataOutputStream(out);
                 try {
                     var request = HttpRequest.from(new DataInputStream(in));
-                    logger.info(request.toString());
+                    log.info(request.toString());
                     var response = newHandler().run(request);
                     if (response == null) {
                         HttpResponse
@@ -75,7 +75,7 @@ public abstract class Server implements Handler {
                 } catch (HttpResponseException hre) {
                     hre.getResponse().writeStream(dos);
                 } catch (Exception e) {
-                    logger.error(e.getMessage());
+                    log.error(e.getMessage());
                     HttpResponse
                             .builder()
                             .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -83,7 +83,7 @@ public abstract class Server implements Handler {
                             .writeStream(dos);
                 }
             } catch (IOException e) {
-                logger.error(e.getMessage());
+                log.error(e.getMessage());
             }
         };
     }
@@ -92,8 +92,8 @@ public abstract class Server implements Handler {
 
         // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
         try (var listenSocket = new ServerSocket(port)) {
-            logger.info("Web Application Server started {} port.", port);
-            
+            log.info("Web Application Server started {} port.", port);
+
             // 클라이언트가 연결될때까지 대기한다.
             while (true) {
                 final Socket connection = listenSocket.accept();
