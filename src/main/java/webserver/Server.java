@@ -19,6 +19,7 @@ import java.net.Socket;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 @RequiredArgsConstructor
 public abstract class Server implements Handler {
@@ -51,12 +52,10 @@ public abstract class Server implements Handler {
         return handler().run(request);
     }
 
-    public Runnable prepare(Socket connection) {
-        logger.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(),
-                connection.getPort());
-
+    public Runnable prepare(Supplier<Socket> socketSupplier) {
         return () -> {
-            try {
+            try (var connection = socketSupplier.get()) {
+                logger.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(), connection.getPort());
                 var in = connection.getInputStream();
                 var out = connection.getOutputStream();
                 var dos = new DataOutputStream(out);
@@ -85,12 +84,6 @@ public abstract class Server implements Handler {
                 }
             } catch (IOException e) {
                 logger.error(e.getMessage());
-            } finally {
-                try {
-                    connection.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
             }
         };
     }
@@ -100,10 +93,14 @@ public abstract class Server implements Handler {
         // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
         try (var listenSocket = new ServerSocket(port)) {
             logger.info("Web Application Server started {} port.", port);
-            Socket connection;
+            
             // 클라이언트가 연결될때까지 대기한다.
-            while ((connection = listenSocket.accept()) != null) {
-                getExecutor().execute(prepare(connection));
+            while (true) {
+                final Socket connection = listenSocket.accept();
+                if (connection == null) {
+                    break;
+                }
+                getExecutor().execute(prepare(() -> connection));
             }
         }
     }

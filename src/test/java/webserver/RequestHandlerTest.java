@@ -35,7 +35,7 @@ class RequestHandlerTest {
         ));
         final var app = new Application();
         // when
-        app.prepare(socket).run();
+        app.prepare(() -> socket).run();
         // then
         var file = FileIoUtils.loadFileFromClasspath(filepath);
         assertThat(socket.output().split("\r\n")).contains(
@@ -60,7 +60,7 @@ class RequestHandlerTest {
         ));
         final var app = new Application();
         // when
-        app.prepare(socket).run();
+        app.prepare(() -> socket).run();
         // then
         assertThat(socket.output().split("\r\n")).contains(
                 "HTTP/1.1 307 Temporary Redirect ",
