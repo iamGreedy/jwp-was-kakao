@@ -15,10 +15,15 @@ import webserver.http.HttpResponse;
 
 import java.util.regex.Pattern;
 
+
+// 유저 관련 서비스에 대한 컨트롤러
 public class UserService extends Server {
     @Override
     public Handler newHandler() {
         return Controller.builder()
+                         // POST ~/create
+                         // 유저 생성에 대한 시도를 처리
+                         // 생성시 로그인 화면으로 리다이렉션
                          .handler(Restful.builder()
                                          .method(HttpMethod.POST)
                                          .locationPattern(Pattern.compile("^/create"))
@@ -39,6 +44,9 @@ public class UserService extends Server {
                                                                 .build();
                                          })
                                          .build())
+                         // POST ~/login
+                         // 유저 로그인에 대한 시도를 처리
+                         // 로그인시 /index.html로 리다이렉션
                          .handler(Restful.builder()
                                          .method(HttpMethod.POST)
                                          .locationPattern(Pattern.compile("^/login"))
