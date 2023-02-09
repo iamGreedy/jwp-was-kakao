@@ -47,7 +47,7 @@ public class Cache implements Handler {
 
     @Override
     public HttpResponse run(HttpRequest request) {
-        var iml = request.header("If-Modified-Since");
+        var iml = request.headers.getFirst("If-Modified-Since");
         if (ifLastModified != null && iml.isPresent()) {
             if (!ifLastModified.apply(request, ZonedDateTime.parse(iml.get(), FORMATTER))) {
                 return HttpResponse.builder()
@@ -55,7 +55,7 @@ public class Cache implements Handler {
                                    .build();
             }
         }
-        var inm = request.header("If-None-Match");
+        var inm = request.headers.getFirst("If-None-Match");
         if (ifNoneMatch != null && inm.isPresent()) {
             if (!ifNoneMatch.apply(request, inm.get())) {
                 return HttpResponse.builder()

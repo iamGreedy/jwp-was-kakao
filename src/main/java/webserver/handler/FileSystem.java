@@ -34,13 +34,13 @@ public class FileSystem implements Handler {
 
     @Override
     public boolean isRunnable(HttpRequest request) {
-        var resource = FileSystem.class.getResource(getPath(request.getPath()));
+        var resource = FileSystem.class.getResource(getPath(request.uri.path()));
         return !Objects.isNull(resource);
     }
 
     @Override
     public HttpResponse run(HttpRequest request) {
-        var resource = FileSystem.class.getResource(getPath(request.getPath()));
+        var resource = FileSystem.class.getResource(getPath(request.uri.path()));
         try {
             var path = Path.of(resource.toURI());
             var extension = Optional.of(path.toString())

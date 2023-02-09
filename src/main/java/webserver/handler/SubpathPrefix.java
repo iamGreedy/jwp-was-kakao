@@ -32,7 +32,7 @@ public class SubpathPrefix implements Handler {
 
     @Override
     public boolean isRunnable(HttpRequest request) {
-        return request.getPath().startsWith(prefix);
+        return request.uri.path().startsWith(prefix);
     }
 
     @Override
@@ -42,10 +42,10 @@ public class SubpathPrefix implements Handler {
 
     @Override
     public HttpResponse run(HttpRequest request) {
-        var prefixedPath = request.getPath().substring(prefix.length());
+        var prefixedPath = request.uri.path().substring(prefix.length());
         if (!prefixedPath.startsWith("/")) {
             prefixedPath = "/" + prefixedPath;
         }
-        return handler.run(request.withPath(prefixedPath));
+        return handler.run(request.subpath(prefixedPath));
     }
 }

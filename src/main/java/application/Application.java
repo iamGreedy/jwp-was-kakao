@@ -29,7 +29,7 @@ public class Application extends Server {
         return Controller.builder()
                          // 존재하지 않는 세션을 보유하는 경우 자동으로 쿠키를 삭제하고 로그인을 요구하게 만든다.
                          .handler(Filter.of(request -> {
-                             var sessionId = request.jar().get("JSESSIONID");
+                             var sessionId = request.jar.get("JSESSIONID");
                              if (sessionId.isPresent() && SessionManager.find(sessionId.get())
                                                                         .isEmpty()) {
                                  return HttpResponse.builder()
@@ -60,7 +60,7 @@ public class Application extends Server {
                                  // -> 템플릿에 DataBase의 모든 값을 요청한다.
                                  .require(PathPattern.of("/user/list.html").then(
                                          request -> {
-                                             System.out.println(request.getPath());
+                                             System.out.println(request.uri.path());
                                              return null;
                                          },
                                          Authorization.RequireLogin,

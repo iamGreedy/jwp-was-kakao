@@ -56,10 +56,10 @@ public class TemplateEngine implements Handler {
     @Override
     public boolean isRunnable(HttpRequest request) {
         try {
-            if (!request.getPath().endsWith(EXTENSION)) {
+            if (!request.uri.path().endsWith(EXTENSION)) {
                 return false;
             }
-            getHandlebars().getLoader().sourceAt(trimExtension(request.getPath()));
+            getHandlebars().getLoader().sourceAt(trimExtension(request.uri.path()));
             return true;
         } catch (IOException ioe) {
             return false;
@@ -78,11 +78,11 @@ public class TemplateEngine implements Handler {
             // TODO : 이는 아마도 실수일 가능성이 있음 검토가 필요
             throw response.get().toException();
         }
-        var extension = request.getPath().substring(request.getPath().lastIndexOf("."));
-        var template = getHandlebars().compile(trimExtension(request.getPath()));
+        var extension = request.uri.path().substring(request.uri.path().lastIndexOf("."));
+        var template = getHandlebars().compile(trimExtension(request.uri.path()));
         var context = request.use(CONTEXT);
         var profilePage = template.apply(context.orElse(null));
-        log.debug("TemplateEngine(Handlebars, Location = {}, Template = {}) :\n {}", request.getPath(), template.filename(), profilePage);
+        log.debug("TemplateEngine(Handlebars, Location = {}, Template = {}) :\n {}", request.uri.path(), template.filename(), profilePage);
         return HttpResponse.builder()
                            .status(HttpStatus.OK)
                            .header("Content-Type", Mime.fromExtension(extension).map(Mime::getValue))

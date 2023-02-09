@@ -33,7 +33,7 @@ public class PathPattern implements Handler {
 
     @Override
     public boolean isRunnable(HttpRequest request) {
-        return pattern.matcher(request.getPath()).matches();
+        return pattern.matcher(request.uri.path()).matches();
     }
 
     @Override

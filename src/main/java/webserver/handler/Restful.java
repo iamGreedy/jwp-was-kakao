@@ -21,9 +21,9 @@ public class Restful implements Handler {
     private Handler handler;
 
     public boolean isRunnable(HttpRequest request) {
-        return request.getMethod().equals(method.name()) && locationPattern.matcher(request.getPath()).matches();
+        return request.method.equals(method.name()) && locationPattern.matcher(request.uri.path()).matches();
     }
-    
+
     @Override
     public void init(Context context) {
         handler.init(context);
