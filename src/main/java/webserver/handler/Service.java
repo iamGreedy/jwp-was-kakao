@@ -63,6 +63,7 @@ public abstract class Service implements Handler {
                       throw new RuntimeException(e);
                   }
               });
+        handler.init(context);
     }
 
     @Override
