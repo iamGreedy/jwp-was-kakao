@@ -1,25 +1,20 @@
 package webserver.handler;
 
-
+import lombok.RequiredArgsConstructor;
 import webserver.http.HttpRequest;
+import webserver.http.HttpResponse;
+import webserver.resource.ProvidedResource;
 
-import java.util.Objects;
+import java.util.function.Function;
 
-@FunctionalInterface
-public interface Provider {
-    static SimpleProvider simple() {
-        return SimpleProvider.builder().build();
+@RequiredArgsConstructor(staticName = "of")
+public class Provider<T> implements Handler {
+    private final ProvidedResource<T> resource;
+    private final Function<HttpRequest, T> provider;
+
+    @Override
+    public HttpResponse run(HttpRequest request) {
+        request.provide(resource, provider.apply(request));
+        return null;
     }
-
-    static Provider from(Handler handler, Provider provider) {
-        return request -> {
-            var response = handler.run(request);
-            if (Objects.nonNull(response)) {
-                throw response.toException();
-            }
-            return provider.provide(request);
-        };
-    }
-
-    Object provide(HttpRequest request);
 }

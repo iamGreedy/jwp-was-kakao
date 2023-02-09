@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
+import webserver.resource.Context;
 
 import java.util.function.Function;
 
@@ -21,6 +22,11 @@ public class Filter implements Handler {
     @Override
     public boolean isRunnable(HttpRequest request) {
         return onFiltered.isRunnable(request);
+    }
+
+    @Override
+    public void init(Context context) {
+        onFiltered.init(context);
     }
 
     @Override

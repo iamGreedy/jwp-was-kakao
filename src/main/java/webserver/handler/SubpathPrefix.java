@@ -3,6 +3,7 @@ package webserver.handler;
 import lombok.Builder;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
+import webserver.resource.Context;
 
 import java.util.Arrays;
 
@@ -32,6 +33,11 @@ public class SubpathPrefix implements Handler {
     @Override
     public boolean isRunnable(HttpRequest request) {
         return request.getPath().startsWith(prefix);
+    }
+
+    @Override
+    public void init(Context context) {
+        handler.init(context);
     }
 
     @Override

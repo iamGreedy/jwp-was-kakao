@@ -1,10 +1,14 @@
 package webserver.http;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.SneakyThrows;
+import lombok.ToString;
 import org.springframework.http.HttpStatus;
 import webserver.cookie.CookieJar;
 import webserver.form.Form;
 import webserver.mime.Mime;
+import webserver.resource.Context;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,10 +22,10 @@ import java.util.stream.Collectors;
 
 @Getter
 @ToString
-@AllArgsConstructor
-public class HttpRequest {
+public class HttpRequest extends Context {
     private static final Pattern REQUEST_START = Pattern.compile("^(HEAD|GET|POST|PATCH|DELETE) (.+) (HTTP/[0-9]+(\\.[0-9]+))$");
     private static final Pattern REQUEST_HEADER = Pattern.compile("^(.+):[ \t]*(.+)$");
+    //
     private String method;
     private String path;
     @Getter(AccessLevel.NONE)
@@ -33,8 +37,19 @@ public class HttpRequest {
     @Getter(AccessLevel.NONE)
     private CookieJar cookieJar;
 
+    private HttpRequest(Context parent, String method, String path, Map<String, String> query, String version, Map<String, List<String>> header, String body, CookieJar cookieJar) {
+        super(parent);
+        this.method = method;
+        this.path = path;
+        this.query = query;
+        this.version = version;
+        this.header = header;
+        this.body = body;
+        this.cookieJar = cookieJar;
+    }
+
     @SneakyThrows(IOException.class)
-    public static HttpRequest from(InputStream input) {
+    public static HttpRequest from(Context parent, InputStream input) {
         // 시간이 너무 길어지면 드롭시키는 코드도 추가하면 좋을텐데.
         var reader = new BufferedReader(new InputStreamReader(input));
         var start = REQUEST_START.matcher(reader.readLine());
@@ -96,6 +111,7 @@ public class HttpRequest {
         //
 
         return new HttpRequest(
+                parent,
                 method,
                 path,
                 query,
@@ -146,6 +162,7 @@ public class HttpRequest {
 
     public HttpRequest withPath(String path) {
         return new HttpRequest(
+                this.parent,
                 this.method,
                 path,
                 this.query,

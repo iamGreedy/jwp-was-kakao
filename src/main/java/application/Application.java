@@ -2,6 +2,7 @@ package application;
 
 import application.filter.Authorization;
 import application.service.UserService;
+import com.github.jknack.handlebars.Context;
 import db.Database;
 import db.SessionManager;
 import org.springframework.http.HttpStatus;
@@ -44,26 +45,30 @@ public class Application extends Server {
                          // `/user` 아래에 사용자 관련 API들을 주입
                          .handler(SubpathPrefix.of("/user", new UserService()))
                          // 템플릿 엔진을 이용한 리소스 제공
-                         .handler(TemplateEngine.of(
-                                 "/templates", // "/src/resources/templates" 폴더 아래의 모든 요소들을 제공한다.
-                                 // 각 패스에 해당하는 리소스를 주입
-                                 Provider.simple()
-                                         // 요청된 템플릿이 /user/form.html 경로로 요청된 경우
-                                         // -> 로그인이 되지 않았는지 검증한다.
-                                         // -> 템플릿에 별도의 정보를 제공하지는 않는다.
-                                         .whenPath("/user/form.html", Provider.from(Authorization.RequireNotLogin, request -> null))
-                                         // 요청된 템플릿이 /user/login.html 경로로 요청된 경우
-                                         // -> 로그인이 되지 않았는지 검증한다.
-                                         // -> 템플릿에 별도의 정보를 제공하지는 않는다.
-                                         .whenPath("/user/login.html", Provider.from(Authorization.RequireNotLogin, request -> null))
-                                         // 요청된 템플릿이 /user/list.html 경로로 요청된 경우
-                                         // -> 로그인이 되지 않았는지 검증한다.
-                                         // -> 템플릿에 DataBase의 모든 값을 요청한다.
-                                         .whenPath("/user/list.html", Provider.from(Authorization.RequireLogin, request -> Database.findAll()
-                                                                                                                                   .toArray())
-                                         )
+                         .handler(TemplateEngine
+                                 .of("/templates")
+                                 // 요청된 템플릿이 /user/form.html 경로로 요청된 경우
+                                 // -> 로그인이 되지 않았는지 검증한다.
+                                 // -> 템플릿에 별도의 정보를 제공하지는 않는다.
+                                 .require(PathPattern.of("/user/form.html").then(Authorization.RequireNotLogin))
+                                 // 요청된 템플릿이 /user/login.html 경로로 요청된 경우
+                                 // -> 로그인이 되지 않았는지 검증한다.
+                                 // -> 템플릿에 별도의 정보를 제공하지는 않는다.
+                                 .require(PathPattern.of("/user/login.html").then(Authorization.RequireNotLogin))
+                                 // 요청된 템플릿이 /user/list.html 경로로 요청된 경우
+                                 // -> 로그인이 되지 않았는지 검증한다.
+                                 // -> 템플릿에 DataBase의 모든 값을 요청한다.
+                                 .require(PathPattern.of("/user/list.html").then(
+                                         request -> {
+                                             System.out.println(request.getPath());
+                                             return null;
+                                         },
+                                         Authorization.RequireLogin,
+                                         Provider.of(TemplateEngine.CONTEXT, request -> Context.newContext(Database.findAll()
+                                                                                                                   .toArray()))
+                                 ))
 
-                         ))
+                         )
                          // 정적 파일 제공
                          .handler(Cache.builder()
                                        .handler(FileSystem.of("/static"))

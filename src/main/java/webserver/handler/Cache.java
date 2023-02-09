@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import webserver.enums.CacheVisible;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
+import webserver.resource.Context;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -37,6 +38,11 @@ public class Cache implements Handler {
     @Override
     public boolean isRunnable(HttpRequest request) {
         return handler.isRunnable(request);
+    }
+
+    @Override
+    public void init(Context context) {
+        handler.init(context);
     }
 
     @Override

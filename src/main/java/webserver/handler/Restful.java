@@ -5,6 +5,7 @@ import lombok.Singular;
 import org.springframework.http.HttpMethod;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
+import webserver.resource.Context;
 
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +22,11 @@ public class Restful implements Handler {
 
     public boolean isRunnable(HttpRequest request) {
         return request.getMethod().equals(method.name()) && locationPattern.matcher(request.getPath()).matches();
+    }
+    
+    @Override
+    public void init(Context context) {
+        handler.init(context);
     }
 
     public HttpResponse run(HttpRequest request) {

@@ -9,6 +9,7 @@ import webserver.handler.Handler;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
 import webserver.http.HttpResponseException;
+import webserver.resource.Context;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -26,6 +27,7 @@ public abstract class Server implements Handler {
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
     private final ExecutorService executor = loadExecutor();
     private Handler cachedHandler = null;
+    private Context context = new Context(null);
 
 
     abstract public Handler newHandler();
@@ -60,7 +62,7 @@ public abstract class Server implements Handler {
                 var out = connection.getOutputStream();
                 var dos = new DataOutputStream(out);
                 try {
-                    var request = HttpRequest.from(new DataInputStream(in));
+                    var request = HttpRequest.from(context, new DataInputStream(in));
                     log.info(request.toString());
                     var response = newHandler().run(request);
                     if (response == null) {
