@@ -42,10 +42,6 @@ public class SubpathPrefix implements Handler {
 
     @Override
     public HttpResponse run(HttpRequest request) {
-        var prefixedPath = request.uri.path().substring(prefix.length());
-        if (!prefixedPath.startsWith("/")) {
-            prefixedPath = "/" + prefixedPath;
-        }
-        return handler.run(request.subpath(prefixedPath));
+        return handler.run(request.subpath(prefix));
     }
 }

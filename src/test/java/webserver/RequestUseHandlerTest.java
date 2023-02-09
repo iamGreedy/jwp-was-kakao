@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
-class RequestHandlerTest {
+class RequestUseHandlerTest {
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
             "index.html             | text/html         | templates/index.html",

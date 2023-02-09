@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import webserver.annotation.UseHandler;
+import webserver.handler.Controller;
 import webserver.handler.Handler;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
@@ -14,27 +16,67 @@ import webserver.resource.Context;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
 public abstract class Server implements Handler {
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
     private final ExecutorService executor = loadExecutor();
+    private final Context context = new Context(null);
     private Handler cachedHandler = null;
-    private Context context = new Context(null);
 
+    public Handler baseHandler() {
+        return null;
+    }
 
-    abstract public Handler newHandler();
+    public Handler loadHandler() {
+        var baseHandler = baseHandler();
+        var classHandlers = new ArrayList<UserDefinedHandler>();
+        if (baseHandler != null) {
+            classHandlers.add(new UserDefinedHandler("", 0, baseHandler));
+        }
+        System.out.printf("\n > %s \n", this.getClass().getName());
+        for (Method method : this.getClass().getMethods()) {
+            System.out.printf("%s : %s \n", this.getClass().getName(), method.getName());
+            var annotation = method.getAnnotation(UseHandler.class);
+            var isReturnHandler = Handler.class.isAssignableFrom(method.getReturnType());
+            var isNoParameters = method.getParameters().length == 0;
+
+            if (annotation != null && isNoParameters && isReturnHandler) {
+                var name = !annotation.name().isEmpty() ? annotation.name() : method.getName();
+                var priority = annotation.priority();
+                try {
+                    var handler = method.invoke(this);
+                    classHandlers.add(new UserDefinedHandler(name, priority, (Handler) handler));
+                    System.out.printf("%s : %s -> invoke\n", this.getClass().getName(), method.getName());
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return Controller.builder()
+                         .handlers(
+                                 classHandlers.stream()
+                                              .sorted()
+                                              .map(UserDefinedHandler::getHandler)
+                                              .collect(Collectors.toList())
+                         )
+                         .build();
+    }
 
     public Handler handler() {
         if (Objects.isNull(cachedHandler)) {
-            cachedHandler = newHandler();
+            cachedHandler = loadHandler();
         }
         return cachedHandler;
     }
@@ -64,7 +106,7 @@ public abstract class Server implements Handler {
                 try {
                     var request = HttpRequest.from(context, new DataInputStream(in));
                     log.info(request.toString());
-                    var response = newHandler().run(request);
+                    var response = handler().run(request);
                     if (response == null) {
                         HttpResponse
                                 .builder()
@@ -104,6 +146,38 @@ public abstract class Server implements Handler {
                 }
                 getExecutor().execute(prepare(() -> connection));
             }
+        }
+    }
+
+    @RequiredArgsConstructor
+    @Getter
+    public static class UserDefinedHandler implements Handler, Comparable<UserDefinedHandler> {
+        private final String name;
+        private final int priority;
+        private final Handler handler;
+
+        @Override
+        public boolean isRunnable(HttpRequest request) {
+            return Handler.super.isRunnable(request);
+        }
+
+        @Override
+        public void init(Context context) {
+            Handler.super.init(context);
+        }
+
+        @Override
+        public HttpResponse run(HttpRequest request) {
+            return null;
+        }
+
+        @Override
+        public int compareTo(UserDefinedHandler o) {
+            var result = -(priority - o.getPriority());
+            if (result == 0) {
+                result = name.compareTo(o.getName());
+            }
+            return result;
         }
     }
 }
