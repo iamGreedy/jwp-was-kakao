@@ -1,24 +1,29 @@
 package db;
 
 import model.User;
+import webserver.annotation.UseResource;
+import webserver.handler.Service;
+import webserver.resource.ServerResource;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class Database {
-    private static Map<String, User> users = new HashMap<>();
+public class Database extends Service {
+    @UseResource
+    public static final ServerResource<Database> CONNECTION = ServerResource.of("connection", Database.class, Database::new);
+    private Map<String, User> users = new HashMap<>();
 
-    public static void addUser(User user) {
+    public void addUser(User user) {
         users.put(user.getUserId(), user);
     }
 
-    public static Optional<User> findUserById(String userId) {
+    public Optional<User> findUserById(String userId) {
         return Optional.ofNullable(users.getOrDefault(userId, null));
     }
 
-    public static Collection<User> findAll() {
+    public Collection<User> findAll() {
         return users.values();
     }
 }

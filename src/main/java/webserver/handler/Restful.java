@@ -2,7 +2,7 @@ package webserver.handler;
 
 import lombok.Builder;
 import lombok.Singular;
-import org.springframework.http.HttpMethod;
+import webserver.http.HttpMethod;
 import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
 import webserver.resource.Context;
@@ -21,7 +21,7 @@ public class Restful implements Handler {
     private Handler handler;
 
     public boolean isRunnable(HttpRequest request) {
-        return request.method.equals(method.name()) && locationPattern.matcher(request.uri.path()).matches();
+        return request.method.equals(method) && locationPattern.matcher(request.uri.path()).matches();
     }
 
     @Override

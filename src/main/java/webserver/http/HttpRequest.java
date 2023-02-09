@@ -23,16 +23,16 @@ import java.util.regex.Pattern;
 @ToString
 public class HttpRequest extends Context {
     private static final Pattern REQUEST_START = Pattern.compile("^(HEAD|GET|POST|PATCH|DELETE) (.+) (HTTP/[0-9]+(\\.[0-9]+))$");
-    public final HttpHeader headers;
     //
-    public final String method;
+    public final HttpMethod method;
     public final HttpRequestURI uri;
     public final String version;
+    public final HttpHeader headers;
     public final ByteBuffer body;
     @Getter(AccessLevel.NONE)
     public final CookieJar jar;
 
-    private HttpRequest(Context parent, String method, HttpRequestURI uri, String version, HttpHeader headers, ByteBuffer body, CookieJar jar) {
+    private HttpRequest(Context parent, HttpMethod method, HttpRequestURI uri, String version, HttpHeader headers, ByteBuffer body, CookieJar jar) {
         super(parent);
         this.method = method;
         this.uri = uri;
@@ -50,7 +50,7 @@ public class HttpRequest extends Context {
         if (!start.matches()) {
             throw new RuntimeException("올바르지 않은 HTTP 형식");
         }
-        var method = start.group(1);
+        var method = HttpMethod.valueOf(start.group(1));
         var uri = HttpRequestURI.parse(start.group(2));
         var version = start.group(3);
         //

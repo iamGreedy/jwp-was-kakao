@@ -21,14 +21,14 @@ public class Application extends Server {
                 .listen(port);
     }
 
-    @UseHandler(priority = 5)
+    @UseHandler(priority = 6)
     // 존재하지 않는 세션을 보유하는 경우 자동으로 쿠키를 삭제하고 로그인을 요구하게 만든다.
     // 이는 다른 컨트롤러보다 먼저 검사되어야 하므로 우선순위가 높게 책정된다.
     public Handler validateSession() {
         return Filter.of(request -> {
             var sessionId = request.jar.get("JSESSIONID");
-            if (sessionId.isPresent() && SessionManager.find(sessionId.get())
-                                                       .isEmpty()) {
+            if (sessionId.isPresent() && request.mustUse(SessionManager.MANAGER).find(sessionId.get())
+                                                .isEmpty()) {
                 return HttpResponse.builder()
                                    .status(HttpStatus.TEMPORARY_REDIRECT)
                                    .header("Location", "/user/login.html")
@@ -37,6 +37,19 @@ public class Application extends Server {
             }
             return null;
         });
+    }
+
+    @UseHandler(priority = 5)
+    // 데이터베이스 리소스를 추가한다.
+    public Handler database() {
+        return new Database();
+    }
+
+
+    @UseHandler(priority = 5)
+    // 세션 관리자 리소스를 추가한다.
+    public Handler sessionManager() {
+        return new SessionManager();
     }
 
     @UseHandler
@@ -75,8 +88,9 @@ public class Application extends Server {
                             return null;
                         },
                         Authorization.RequireLogin,
-                        Provider.of(TemplateEngine.CONTEXT, request -> Context.newContext(Database.findAll()
-                                                                                                  .toArray()))
+                        Provider.of(TemplateEngine.CONTEXT, request ->
+                                Context.newContext(request.mustUse(Database.CONNECTION).findAll().toArray())
+                        )
                 ));
     }
 

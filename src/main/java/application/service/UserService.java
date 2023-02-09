@@ -4,20 +4,20 @@ import application.filter.Authorization;
 import db.Database;
 import db.SessionManager;
 import model.User;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import webserver.Server;
 import webserver.annotation.UseHandler;
 import webserver.cookie.Cookie;
 import webserver.handler.Handler;
 import webserver.handler.Restful;
+import webserver.handler.Service;
+import webserver.http.HttpMethod;
 import webserver.http.HttpResponse;
 
 import java.util.regex.Pattern;
 
 
 // 유저 관련 서비스에 대한 컨트롤러
-public class UserService extends Server {
+public class UserService extends Service {
 
     // POST ~/create
     // 유저 생성에 대한 시도를 처리
@@ -36,7 +36,7 @@ public class UserService extends Server {
                           var name = form.mustField("name");
                           var email = form.mustField("email");
                           // DB 삽입
-                          Database.addUser(new User(userId, password, name, email));
+                          request.mustUse(Database.CONNECTION).addUser(new User(userId, password, name, email));
                           // Http 리턴
                           return HttpResponse.builder()
                                              .status(HttpStatus.TEMPORARY_REDIRECT)
@@ -61,24 +61,24 @@ public class UserService extends Server {
                           var userId = form.mustField("userId");
                           var password = form.mustField("password");
                           // 데이터베이스 접근
-                          return Database.findUserById(userId)
-                                         // 존재하는 유저여야 함
-                                         .filter(user -> user.isValidPassword(password))
-                                         .map((user) -> {
-                                             // 존재하는 유저라면 세션을 만들고 쿠키를 만든 뒤 리턴
-                                             var session = SessionManager.create();
-                                             session.setAttribute("userId", userId);
-                                             return HttpResponse.builder()
-                                                                .status(HttpStatus.TEMPORARY_REDIRECT)
-                                                                .header("Location", "/index.html")
-                                                                .cookie(Cookie.of("JSESSIONID", session.getId(), "/"))
-                                                                .build();
-                                         })
-                                         // 존재하지 않거나 비밀번호가 틀린 경우
-                                         .orElseGet(() -> HttpResponse.builder()
-                                                                      .status(HttpStatus.TEMPORARY_REDIRECT)
-                                                                      .header("Location", "/user/login_failed.html")
-                                                                      .build());
+                          return request.mustUse(Database.CONNECTION).findUserById(userId)
+                                        // 존재하는 유저여야 함
+                                        .filter(user -> user.isValidPassword(password))
+                                        .map((user) -> {
+                                            // 존재하는 유저라면 세션을 만들고 쿠키를 만든 뒤 리턴
+                                            var session = request.mustUse(SessionManager.MANAGER).create();
+                                            session.setAttribute("userId", userId);
+                                            return HttpResponse.builder()
+                                                               .status(HttpStatus.TEMPORARY_REDIRECT)
+                                                               .header("Location", "/index.html")
+                                                               .cookie(Cookie.of("JSESSIONID", session.getId(), "/"))
+                                                               .build();
+                                        })
+                                        // 존재하지 않거나 비밀번호가 틀린 경우
+                                        .orElseGet(() -> HttpResponse.builder()
+                                                                     .status(HttpStatus.TEMPORARY_REDIRECT)
+                                                                     .header("Location", "/user/login_failed.html")
+                                                                     .build());
 
 
                       })

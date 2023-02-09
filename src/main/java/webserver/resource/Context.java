@@ -1,6 +1,8 @@
 package webserver.resource;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import webserver.http.HttpResponse;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,5 +25,13 @@ public class Context {
             return Optional.empty();
         }
         return parent.use(resource);
+    }
+
+    public <T> T mustUse(Resource<T> resource) {
+        return parent.use(resource)
+                     .orElseThrow(() -> HttpResponse.builder()
+                                                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                                    .build()
+                                                    .toException());
     }
 }

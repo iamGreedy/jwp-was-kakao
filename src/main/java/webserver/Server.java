@@ -12,6 +12,7 @@ import webserver.http.HttpRequest;
 import webserver.http.HttpResponse;
 import webserver.http.HttpResponseException;
 import webserver.resource.Context;
+import webserver.tools.UserDefineHandler;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 public abstract class Server implements Handler {
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
     private final ExecutorService executor = loadExecutor();
+    @Getter
     private final Context context = new Context(null);
     private Handler cachedHandler = null;
 
@@ -41,13 +43,11 @@ public abstract class Server implements Handler {
 
     public Handler loadHandler() {
         var baseHandler = baseHandler();
-        var classHandlers = new ArrayList<UserDefinedHandler>();
+        var classHandlers = new ArrayList<UserDefineHandler>();
         if (baseHandler != null) {
-            classHandlers.add(new UserDefinedHandler("", 0, baseHandler));
+            classHandlers.add(new UserDefineHandler("", 0, baseHandler));
         }
-        System.out.printf("\n > %s \n", this.getClass().getName());
         for (Method method : this.getClass().getMethods()) {
-            System.out.printf("%s : %s \n", this.getClass().getName(), method.getName());
             var annotation = method.getAnnotation(UseHandler.class);
             var isReturnHandler = Handler.class.isAssignableFrom(method.getReturnType());
             var isNoParameters = method.getParameters().length == 0;
@@ -57,8 +57,7 @@ public abstract class Server implements Handler {
                 var priority = annotation.priority();
                 try {
                     var handler = method.invoke(this);
-                    classHandlers.add(new UserDefinedHandler(name, priority, (Handler) handler));
-                    System.out.printf("%s : %s -> invoke\n", this.getClass().getName(), method.getName());
+                    classHandlers.add(new UserDefineHandler(name, priority, (Handler) handler));
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
@@ -68,7 +67,7 @@ public abstract class Server implements Handler {
                          .handlers(
                                  classHandlers.stream()
                                               .sorted()
-                                              .map(UserDefinedHandler::getHandler)
+                                              .map(UserDefineHandler::getHandler)
                                               .collect(Collectors.toList())
                          )
                          .build();
@@ -88,6 +87,11 @@ public abstract class Server implements Handler {
     @Override
     public boolean isRunnable(HttpRequest request) {
         return handler().isRunnable(request);
+    }
+
+    @Override
+    public void init(Context context) {
+        handler().init(context);
     }
 
     @Override
@@ -133,7 +137,7 @@ public abstract class Server implements Handler {
     }
 
     public void listen(int port) throws Exception {
-
+        this.init(context);
         // 서버소켓을 생성한다. 웹서버는 기본적으로 8080번 포트를 사용한다.
         try (var listenSocket = new ServerSocket(port)) {
             log.info("Web Application Server started {} port.", port);
@@ -149,35 +153,5 @@ public abstract class Server implements Handler {
         }
     }
 
-    @RequiredArgsConstructor
-    @Getter
-    public static class UserDefinedHandler implements Handler, Comparable<UserDefinedHandler> {
-        private final String name;
-        private final int priority;
-        private final Handler handler;
 
-        @Override
-        public boolean isRunnable(HttpRequest request) {
-            return Handler.super.isRunnable(request);
-        }
-
-        @Override
-        public void init(Context context) {
-            Handler.super.init(context);
-        }
-
-        @Override
-        public HttpResponse run(HttpRequest request) {
-            return null;
-        }
-
-        @Override
-        public int compareTo(UserDefinedHandler o) {
-            var result = -(priority - o.getPriority());
-            if (result == 0) {
-                result = name.compareTo(o.getName());
-            }
-            return result;
-        }
-    }
 }

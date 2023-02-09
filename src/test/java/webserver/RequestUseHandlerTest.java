@@ -66,7 +66,7 @@ class RequestUseHandlerTest {
                 "HTTP/1.1 307 Temporary Redirect ",
                 "Location: /user/login.html "
         );
-        assertThat(Database.findUserById("cu"))
+        assertThat(app.getContext().mustUse(Database.CONNECTION).findUserById("cu"))
                 .isPresent()
                 .get()
                 .satisfies(user -> assertAll(
